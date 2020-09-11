@@ -121,4 +121,27 @@ defmodule ExSecp256k1Test do
       assert {:error, :recovery_failure} = ExSecp256k1.recover(hash, r, s, 2)
     end
   end
+
+  describe "create_public_key/1" do
+    test "creates public key from private key" do
+      private_key =
+        <<120, 128, 174, 201, 52, 19, 241, 23, 239, 20, 189, 78, 109, 19, 8, 117, 171, 44, 125,
+          125, 85, 160, 100, 250, 195, 194, 247, 189, 81, 81, 99, 128>>
+
+      assert {:ok,
+              <<4, 196, 192, 12, 151, 91, 46, 136, 104, 28, 140, 147, 175, 203, 109, 123, 247,
+                168, 3, 74, 46, 67, 92, 219, 154, 218, 144, 135, 114, 76, 12, 140, 213, 136, 29,
+                101, 44, 225, 99, 58, 116, 118, 3, 199, 153, 99, 106, 231, 21, 184, 191, 183, 239,
+                161, 155, 87, 19, 83, 37, 22, 168, 71, 124, 27,
+                172>>} = ExSecp256k1.create_public_key(private_key)
+    end
+
+    test "fails to generate public key if private key is not 32 bytes" do
+      assert {:error, :wrong_private_key_size} = ExSecp256k1.create_public_key(<<1>>)
+    end
+
+    test "fails to generate public key if private key is not binary" do
+      assert {:error, :private_key_not_binary} = ExSecp256k1.create_public_key(nil)
+    end
+  end
 end

@@ -1,7 +1,7 @@
 use rustler::types::binary::{Binary, OwnedBinary};
 use rustler::{Encoder, Env, Term};
 use secp256k1::curve::Scalar;
-use secp256k1::{Message, RecoveryId, SecretKey, Signature};
+use secp256k1::{Message, PublicKey, RecoveryId, SecretKey, Signature};
 
 mod atoms {
     rustler::rustler_atoms! {
@@ -27,7 +27,8 @@ rustler::rustler_export_nifs! {
     "Elixir.ExSecp256k1",
     [
         ("sign", 2, sign, rustler::SchedulerFlags::DirtyCpu),
-        ("recover", 4, recover, rustler::SchedulerFlags::DirtyCpu)
+        ("recover", 4, recover, rustler::SchedulerFlags::DirtyCpu),
+        ("create_public_key", 1, create_public_key, rustler::SchedulerFlags::DirtyCpu)
     ],
     None
 }
@@ -141,4 +142,29 @@ fn recover<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
         }
         Err(_) => (atoms::error(), atoms::recovery_failure()).encode(env),
     }
+}
+
+fn create_public_key<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
+    let private_key_bin: Binary = match args[0].decode() {
+        Ok(binary) => binary,
+        Err(_error) => return (atoms::error(), atoms::private_key_not_binary()).encode(env),
+    };
+
+    if private_key_bin.len() != 32 {
+        return (atoms::error(), atoms::wrong_private_key_size()).encode(env);
+    }
+
+    let mut private_key_fixed: [u8; 32] = [0; 32];
+    private_key_fixed.copy_from_slice(&private_key_bin.as_slice()[..32]);
+    let private_key = SecretKey::parse(&private_key_fixed).unwrap();
+
+    let public_key = PublicKey::from_secret_key(&private_key);
+
+    let public_key_array = public_key.serialize();
+    let mut public_key_result: OwnedBinary = OwnedBinary::new(65).unwrap();
+    public_key_result
+        .as_mut_slice()
+        .copy_from_slice(&public_key_array);
+
+    (atoms::ok(), public_key_result.release(env)).encode(env)
 }
