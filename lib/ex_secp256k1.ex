@@ -3,5 +3,5 @@ defmodule ExSecp256k1 do
 
   def sign(_message, _private_key), do: :erlang.nif_error(:nif_not_loaded)
 
-  def ec_recover(_hash, _r, _s, _recovery_id), do: :erlang.nif_error(:nif_not_loaded)
+  def recover(_hash, _r, _s, _recovery_id), do: :erlang.nif_error(:nif_not_loaded)
 end
