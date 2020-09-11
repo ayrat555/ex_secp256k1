@@ -1,18 +1,7 @@
 defmodule ExSecp256k1 do
-  @moduledoc """
-  Documentation for `ExSecp256k1`.
-  """
+  use Rustler, otp_app: :ex_secp256k1, crate: "exsecp256k1"
 
-  @doc """
-  Hello world.
+  def sign(_message, _private_key), do: :erlang.nif_error(:nif_not_loaded)
 
-  ## Examples
-
-      iex> ExSecp256k1.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
+  def ec_recover(_hash, _r, _s, _recovery_id), do: :erlang.nif_error(:nif_not_loaded)
 end
