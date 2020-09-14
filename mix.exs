@@ -4,7 +4,7 @@ defmodule ExSecp256k1.MixProject do
   def project do
     [
       app: :ex_secp256k1,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       compilers: [:rustler] ++ Mix.compilers(),
@@ -28,7 +28,16 @@ defmodule ExSecp256k1.MixProject do
       name: :ex_secp256k1,
       maintainers: ["Ayrat Badykov"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/ayrat555/ex_secp256k1"}
+      links: %{"GitHub" => "https://github.com/ayrat555/ex_secp256k1"},
+      files: [
+        "mix.exs",
+        "native/exsecp256k1/src",
+        "native/exsecp256k1/Cargo.toml",
+        "lib",
+        "LICENSE",
+        "README.md",
+        "CHANGELOG.md"
+      ]
     ]
   end
 

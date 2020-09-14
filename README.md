@@ -10,7 +10,7 @@ The package can be installed by adding `ex_secp256k1` to your list of dependenci
 
 ```elixir
   [
-    {:ex_secp256k1, "~> 0.1.0"}
+    {:ex_secp256k1, "~> 0.1.1"}
   ]
 ```
 
