@@ -4,11 +4,13 @@ Rust Nif that wraps a couple functions from the [libsecp256k1](https://github.co
 
 ## Installation
 
-It's not available on hex.pm yet. So the only way to install it using this repo:
+`ex_secp256k1` requires Rust to be installed.
+
+The package can be installed by adding `ex_secp256k1` to your list of dependencies in `mix.exs`:
 
 ```elixir
   [
-    {:ex_secp256k1, git: "https://github.com/ayrat555/ex_secp256k1"}
+    {:ex_secp256k1, "~> 0.1.0"}
   ]
 ```
 
