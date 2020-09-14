@@ -44,6 +44,35 @@ defmodule ExSecp256k1Test do
     test "fails if message is not binary", %{private_key: private_key} do
       assert {:error, :message_not_binary} = ExSecp256k1.sign(10, private_key)
     end
+
+    @tag :perf
+    @tag timeout: 300_000
+    test "sequential performance test", %{private_key: private_key, message: message} do
+      Benchee.run(
+        %{
+          "ex_secp256k1 sign seq" => fn ->
+            ExSecp256k1.sign(message, private_key)
+          end
+        },
+        time: 100,
+        memory_time: 10
+      )
+    end
+
+    @tag :perf
+    @tag timeout: 300_000
+    test "parallel performance test", %{private_key: private_key, message: message} do
+      Benchee.run(
+        %{
+          "ex_secp256k1 sign par" => fn ->
+            ExSecp256k1.sign(message, private_key)
+          end
+        },
+        time: 100,
+        memory_time: 10,
+        parallel: 4
+      )
+    end
   end
 
   describe "recover/4" do
@@ -120,6 +149,45 @@ defmodule ExSecp256k1Test do
     test "fails to recover unrecoverable data", %{hash: hash, r: r, s: s} do
       assert {:error, :recovery_failure} = ExSecp256k1.recover(hash, r, s, 2)
     end
+
+    @tag :perf
+    @tag timeout: 300_000
+    test "sequential performance test", %{
+      hash: hash,
+      r: r,
+      s: s,
+      recovery_id: recovery_id
+    } do
+      Benchee.run(
+        %{
+          "ex_secp256k1 recover seq" => fn ->
+            ExSecp256k1.recover(hash, r, s, recovery_id)
+          end
+        },
+        time: 100,
+        memory_time: 10
+      )
+    end
+
+    @tag :perf
+    @tag timeout: 300_000
+    test "parallel performance test", %{
+      hash: hash,
+      r: r,
+      s: s,
+      recovery_id: recovery_id
+    } do
+      Benchee.run(
+        %{
+          "ex_secp256k1 recover par" => fn ->
+            ExSecp256k1.recover(hash, r, s, recovery_id)
+          end
+        },
+        time: 100,
+        memory_time: 10,
+        parallel: 4
+      )
+    end
   end
 
   describe "create_public_key/1" do
@@ -142,6 +210,39 @@ defmodule ExSecp256k1Test do
 
     test "fails to generate public key if private key is not binary" do
       assert {:error, :private_key_not_binary} = ExSecp256k1.create_public_key(nil)
+    end
+
+    @tag :perf
+    @tag timeout: 300_000
+    test "sequential performance test" do
+      private_key = :crypto.strong_rand_bytes(32)
+
+      Benchee.run(
+        %{
+          "ex_secp256k1 create_public_key seq" => fn ->
+            ExSecp256k1.create_public_key(private_key)
+          end
+        },
+        time: 100,
+        memory_time: 10
+      )
+    end
+
+    @tag :perf
+    @tag timeout: 300_000
+    test "parallel performance test" do
+      private_key = :crypto.strong_rand_bytes(32)
+
+      Benchee.run(
+        %{
+          "ex_secp256k1 create_public_key par" => fn ->
+            ExSecp256k1.create_public_key(private_key)
+          end
+        },
+        time: 100,
+        memory_time: 10,
+        parallel: 6
+      )
     end
   end
 end
