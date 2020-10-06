@@ -320,6 +320,45 @@ defmodule ExSecp256k1Test do
     test "fails to recover unrecoverable data", %{hash: hash, r: r, s: s} do
       assert {:error, :recovery_failure} = ExSecp256k1.recover_compact(hash, r <> s, 2)
     end
+
+    @tag :perf
+    @tag timeout: 300_000
+    test "sequential performance test", %{
+      hash: hash,
+      r: r,
+      s: s,
+      recovery_id: recovery_id
+    } do
+      Benchee.run(
+        %{
+          "ex_secp256k1 recover_compact seq" => fn ->
+            ExSecp256k1.recover_compact(hash, r <> s, recovery_id)
+          end
+        },
+        time: 100,
+        memory_time: 10
+      )
+    end
+
+    @tag :perf
+    @tag timeout: 300_000
+    test "parallel performance test", %{
+      hash: hash,
+      r: r,
+      s: s,
+      recovery_id: recovery_id
+    } do
+      Benchee.run(
+        %{
+          "ex_secp256k1 recover_compact par" => fn ->
+            ExSecp256k1.recover_compact(hash, r <> s, recovery_id)
+          end
+        },
+        time: 100,
+        memory_time: 10,
+        parallel: 4
+      )
+    end
   end
 
   describe "create_public_key/1" do
