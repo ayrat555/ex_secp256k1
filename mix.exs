@@ -4,7 +4,7 @@ defmodule ExSecp256k1.MixProject do
   def project do
     [
       app: :ex_secp256k1,
-      version: "0.1.1",
+      version: "0.1.2",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       compilers: [:rustler] ++ Mix.compilers(),

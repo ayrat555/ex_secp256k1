@@ -10,7 +10,7 @@ The package can be installed by adding `ex_secp256k1` to your list of dependenci
 
 ```elixir
   [
-    {:ex_secp256k1, "~> 0.1.1"}
+    {:ex_secp256k1, "~> 0.1.2"}
   ]
 ```
 
@@ -32,9 +32,11 @@ private_key = <<120, 128, 174, 201, 52, 19, 241, 23, 239, 20, 189, 78, 109, 19, 
 {:ok {r_binary, s_binary, recovery_id_int}} = ExSecp256k1.sign(message, private_key)
 
 {:error, :message_not_binary} = ExSecp256k1.sign(10, private_key)
+
+{:ok {signature_bin, recovery_id_int}} = ExSecp256k1.sign_compact(message, private_key)
 ```
 
-To recover a public key from signed message use `ExSecp256k1.recover/4`:
+To recover a public key from signed message use `ExSecp256k1.recover/4` or `ExSecp256k1.recover_compact/3`:
 ```elixir
 hash =
      <<218, 245, 167, 121, 174, 151, 47, 151, 33, 151, 48, 61, 123, 87, 71, 70, 199, 239, 131,
@@ -52,6 +54,9 @@ recovery_id = 0
 
 {:ok, _public_key_binary} = ExSecp256k1.recover(hash, r, s, recovery_id)
 {:error, :recovery_failure} = ExSecp256k1.recover(hash, r, s, 2)
+
+
+{:ok, _public_key_binary} = ExSecp256k1.recover_compact(hash, r <> s, recovery_id)
 ```
 
 ## Contributing
