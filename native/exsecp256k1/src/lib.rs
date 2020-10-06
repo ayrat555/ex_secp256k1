@@ -27,6 +27,7 @@ rustler::rustler_export_nifs! {
     "Elixir.ExSecp256k1",
     [
         ("sign", 2, sign, rustler::SchedulerFlags::DirtyCpu),
+        ("sign_compact", 2, sign_compact, rustler::SchedulerFlags::DirtyCpu),
         ("recover", 4, recover, rustler::SchedulerFlags::DirtyCpu),
         ("create_public_key", 1, create_public_key, rustler::SchedulerFlags::DirtyCpu)
     ],
@@ -34,34 +35,10 @@ rustler::rustler_export_nifs! {
 }
 
 fn sign<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
-    let message_bin: Binary = match args[0].decode() {
-        Ok(binary) => binary,
-        Err(_error) => return (atoms::error(), atoms::message_not_binary()).encode(env),
+    let (Signature { s, r }, recid) = match secp256k1_sign(env, args) {
+        Ok(result) => result,
+        Err(error) => return error,
     };
-
-    let private_key_bin: Binary = match args[1].decode() {
-        Ok(binary) => binary,
-        Err(_error) => return (atoms::error(), atoms::private_key_not_binary()).encode(env),
-    };
-
-    if message_bin.len() != 32 {
-        return (atoms::error(), atoms::wrong_message_size()).encode(env);
-    }
-
-    if private_key_bin.len() != 32 {
-        return (atoms::error(), atoms::wrong_private_key_size()).encode(env);
-    }
-
-    let mut private_key_fixed: [u8; 32] = [0; 32];
-    private_key_fixed.copy_from_slice(&private_key_bin.as_slice()[..32]);
-
-    let mut message_fixed: [u8; 32] = [0; 32];
-    message_fixed.copy_from_slice(&message_bin.as_slice()[..32]);
-
-    let private_key = SecretKey::parse(&private_key_fixed).unwrap();
-    let message = Message::parse(&message_fixed);
-
-    let (Signature { s, r }, recid) = secp256k1::sign(&message, &private_key);
 
     let mut r_bin: OwnedBinary = OwnedBinary::new(32).unwrap();
     let mut s_bin: OwnedBinary = OwnedBinary::new(32).unwrap();
@@ -75,6 +52,19 @@ fn sign<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
         (r_bin.release(env), s_bin.release(env), recid_u8),
     )
         .encode(env)
+}
+
+fn sign_compact<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
+    let (signature, recovery_id) = match secp256k1_sign(env, args) {
+        Ok((result, recovery_id)) => (result.serialize(), recovery_id.serialize()),
+        Err(error) => return error,
+    };
+
+    let mut signature_bin: OwnedBinary = OwnedBinary::new(64).unwrap();
+
+    signature_bin.as_mut_slice().copy_from_slice(&signature);
+
+    (atoms::ok(), (signature_bin.release(env), recovery_id)).encode(env)
 }
 
 fn recover<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
@@ -167,4 +157,38 @@ fn create_public_key<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
         .copy_from_slice(&public_key_array);
 
     (atoms::ok(), public_key_result.release(env)).encode(env)
+}
+
+fn secp256k1_sign<'a>(
+    env: Env<'a>,
+    args: &[Term<'a>],
+) -> Result<(Signature, RecoveryId), Term<'a>> {
+    let message_bin: Binary = match args[0].decode() {
+        Ok(binary) => binary,
+        Err(_error) => return Err((atoms::error(), atoms::message_not_binary()).encode(env)),
+    };
+
+    let private_key_bin: Binary = match args[1].decode() {
+        Ok(binary) => binary,
+        Err(_error) => return Err((atoms::error(), atoms::private_key_not_binary()).encode(env)),
+    };
+
+    if message_bin.len() != 32 {
+        return Err((atoms::error(), atoms::wrong_message_size()).encode(env));
+    }
+
+    if private_key_bin.len() != 32 {
+        return Err((atoms::error(), atoms::wrong_private_key_size()).encode(env));
+    }
+
+    let mut private_key_fixed: [u8; 32] = [0; 32];
+    private_key_fixed.copy_from_slice(&private_key_bin.as_slice()[..32]);
+
+    let mut message_fixed: [u8; 32] = [0; 32];
+    message_fixed.copy_from_slice(&message_bin.as_slice()[..32]);
+
+    let private_key = SecretKey::parse(&private_key_fixed).unwrap();
+    let message = Message::parse(&message_fixed);
+
+    Ok(secp256k1::sign(&message, &private_key))
 }

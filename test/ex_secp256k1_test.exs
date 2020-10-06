@@ -75,6 +75,14 @@ defmodule ExSecp256k1Test do
     end
   end
 
+  describe "sign_compact" do
+    test "returns signature in the compact form", %{
+      private_key: private_key,
+      message: message
+    } do
+    end
+  end
+
   describe "recover/4" do
     setup do
       hash =
