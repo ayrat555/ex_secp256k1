@@ -1,12 +1,19 @@
 # ExSecp256k1
 
-Rust Nif that wraps a couple functions from the [libsecp256k1](https://github.com/paritytech/libsecp256k1) rust library. It only wraps secp256k1 functions used in Ethereum.
+[![Hex.pm](https://img.shields.io/hexpm/v/ex_secp256k1.svg)](https://hex.pm/packages/ex_secp256k1)
+[![Hex.pm](https://img.shields.io/hexpm/dt/ex_secp256k1.svg)](https://hex.pm/packages/ex_secp256k1)
+[![Hex.pm](https://img.shields.io/hexpm/l/ex_secp256k1.svg)](https://hex.pm/packages/ex_secp256k1)
+[![Github.com](https://img.shields.io/github/last-commit/omgnetwork/ex_secp256k1.svg)](https://github.com/omgnetwork/ex_secp256k1)
+
+
+Rust Native Implemented Function (NIF) that wraps a couple functions from the [libsecp256k1](https://github.com/paritytech/libsecp256k1) Rust library. It only wraps `secp256k1` functions used in Ethereum.
 
 ## Installation
 
 `ex_secp256k1` requires Rust to be installed.
 
-The package can be installed by adding `ex_secp256k1` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `ex_secp256k1` to your list of
+dependencies in `mix.exs`:
 
 ```elixir
   [
@@ -19,15 +26,23 @@ The package can be installed by adding `ex_secp256k1` to your list of dependenci
 To create a public key from a private key use `ExSecp256k1.create_public_key/1`. The result is uncompressed public key:
 
 ```elixir
-{:ok, _binary} = ExSecp256k1.create_public_key(<<120, 128, 174, 201, 52, 19, 241, 23, 239, 20, 189, 78, 109, 19, 8, 117, 171, 44, 125, 125, 85, 160, 100, 250, 195, 194, 247, 189, 81, 81, 99, 128>>)
+{:ok, _binary} = ExSecp256k1.create_public_key(<<120, 128, 174, 201, 52, 19,
+241, 23, 239, 20, 189, 78, 109, 19, 8, 117, 171, 44, 125, 125, 85, 160, 100,
+250, 195, 194, 247, 189, 81, 81, 99, 128>>)
 
 {:error, :wrong_private_key_size} = ExSecp256k1.create_public_key(<<1>>)
 ```
 
 To sign a message use `ExSecp256k1.sign/2`. It returns a tuple with `{:ok, {r, s, recovery_id}}` on success and `{:error, reason_atom}` on error:
+
 ```elixir
-message = <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2>>
-private_key = <<120, 128, 174, 201, 52, 19, 241, 23, 239, 20, 189, 78, 109, 19, 8, 117, 171, 44, 125, 125, 85, 160, 100, 250, 195, 194, 247, 189, 81, 81, 99, 128>>
+message =
+  <<0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 2>>
+
+private_key =
+  <<120, 128, 174, 201, 52, 19, 241, 23, 239, 20, 189, 78, 109, 19, 8, 117,
+  171, 44, 125, 125, 85, 160, 100, 250, 195, 194, 247, 189, 81, 81, 99, 128>>
 
 {:ok {r_binary, s_binary, recovery_id_int}} = ExSecp256k1.sign(message, private_key)
 
@@ -37,6 +52,7 @@ private_key = <<120, 128, 174, 201, 52, 19, 241, 23, 239, 20, 189, 78, 109, 19, 
 ```
 
 To recover a public key from signed message use `ExSecp256k1.recover/4` or `ExSecp256k1.recover_compact/3`:
+
 ```elixir
 hash =
      <<218, 245, 167, 121, 174, 151, 47, 151, 33, 151, 48, 61, 123, 87, 71, 70, 199, 239, 131,

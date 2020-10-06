@@ -1,16 +1,18 @@
 defmodule ExSecp256k1.MixProject do
   use Mix.Project
 
+  @source_url "https://github.com/omgnetwork/ex_secp256k1"
+
   def project do
     [
       app: :ex_secp256k1,
+      name: "ExSecp256k1",
       version: "0.1.2",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       compilers: [:rustler] ++ Mix.compilers(),
       rustler_crates: rustler_crates(),
       deps: deps(),
-      name: "ExSecp256k1",
       docs: docs(),
       package: package(),
       description: description()
@@ -19,7 +21,8 @@ defmodule ExSecp256k1.MixProject do
 
   defp description do
     """
-    Rust Nif that wraps a couple functions from the libsecp256k1 rust library. It only wraps secp256k1 functions used in Ethereum.
+    Rust Nif that wraps a couple functions from the libsecp256k1 Rust library.
+    It only wraps secp256k1 functions used in Ethereum.
     """
   end
 
@@ -28,7 +31,10 @@ defmodule ExSecp256k1.MixProject do
       name: :ex_secp256k1,
       maintainers: ["Ayrat Badykov"],
       licenses: ["MIT"],
-      links: %{"GitHub" => "https://github.com/ayrat555/ex_secp256k1"},
+      links: %{
+        "Changelog" => "#{@source_url}/blog/master/CHANGELOG.md",
+        "GitHub" => @source_url
+      },
       files: [
         "mix.exs",
         "native/exsecp256k1/src",
@@ -44,7 +50,9 @@ defmodule ExSecp256k1.MixProject do
   defp docs do
     [
       main: "readme",
+      source_url: @source_url,
       extras: [
+        "CHANGELOG.md",
         "README.md"
       ]
     ]
