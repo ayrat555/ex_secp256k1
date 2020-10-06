@@ -100,6 +100,35 @@ defmodule ExSecp256k1Test do
                  255, 24, 20, 160, 152, 36, 114, 115, 245, 33, 208>>,
                1}} = ExSecp256k1.sign_compact(message, private_key)
     end
+
+    @tag :perf
+    @tag timeout: 300_000
+    test "sequential performance test", %{private_key: private_key, message: message} do
+      Benchee.run(
+        %{
+          "ex_secp256k1 sign_compact seq" => fn ->
+            ExSecp256k1.sign_compact(message, private_key)
+          end
+        },
+        time: 100,
+        memory_time: 10
+      )
+    end
+
+    @tag :perf
+    @tag timeout: 300_000
+    test "parallel performance test", %{private_key: private_key, message: message} do
+      Benchee.run(
+        %{
+          "ex_secp256k1 sign_compact par" => fn ->
+            ExSecp256k1.sign_compact(message, private_key)
+          end
+        },
+        time: 100,
+        memory_time: 10,
+        parallel: 4
+      )
+    end
   end
 
   describe "recover/4" do
