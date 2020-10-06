@@ -10,6 +10,7 @@ mod atoms {
         atom message_not_binary;
         atom private_key_not_binary;
         atom hash_not_binary;
+        atom signature_not_binary;
         atom r_not_binary;
         atom s_not_binary;
         atom recovery_id_not_u8;
@@ -18,6 +19,7 @@ mod atoms {
         atom wrong_hash_size;
         atom wrong_r_size;
         atom wrong_s_size;
+        atom wrong_signature_size;
         atom recovery_failure;
         atom invalid_recovery_id;
     }
@@ -29,6 +31,7 @@ rustler::rustler_export_nifs! {
         ("sign", 2, sign, rustler::SchedulerFlags::DirtyCpu),
         ("sign_compact", 2, sign_compact, rustler::SchedulerFlags::DirtyCpu),
         ("recover", 4, recover, rustler::SchedulerFlags::DirtyCpu),
+        ("recover_compact", 3, recover_compact, rustler::SchedulerFlags::DirtyCpu),
         ("create_public_key", 1, create_public_key, rustler::SchedulerFlags::DirtyCpu)
     ],
     None
@@ -121,17 +124,47 @@ fn recover<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
         Err(_) => return (atoms::error(), atoms::invalid_recovery_id()).encode(env),
     };
 
-    match secp256k1::recover(&message, &signature, &recovery_id) {
-        Ok(public_key) => {
-            let public_key_array = public_key.serialize();
-            let mut public_key_result: OwnedBinary = OwnedBinary::new(65).unwrap();
-            public_key_result
-                .as_mut_slice()
-                .copy_from_slice(&public_key_array);
-            (atoms::ok(), public_key_result.release(env)).encode(env)
-        }
-        Err(_) => (atoms::error(), atoms::recovery_failure()).encode(env),
+    secp256k1_recover(env, message, signature, recovery_id)
+}
+
+fn recover_compact<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
+    let hash_bin: Binary = match args[0].decode() {
+        Ok(binary) => binary,
+        Err(_error) => return (atoms::error(), atoms::hash_not_binary()).encode(env),
+    };
+
+    let signature_bin: Binary = match args[1].decode() {
+        Ok(binary) => binary,
+        Err(_error) => return (atoms::error(), atoms::signature_not_binary()).encode(env),
+    };
+
+    let recovery_id_u8: u8 = match args[2].decode() {
+        Ok(number) => number,
+        Err(_error) => return (atoms::error(), atoms::recovery_id_not_u8()).encode(env),
+    };
+
+    if hash_bin.len() != 32 {
+        return (atoms::error(), atoms::wrong_hash_size()).encode(env);
     }
+
+    if signature_bin.len() != 64 {
+        return (atoms::error(), atoms::wrong_signature_size()).encode(env);
+    }
+
+    let mut hash_fixed: [u8; 32] = [0; 32];
+    hash_fixed.copy_from_slice(&hash_bin.as_slice()[..32]);
+    let message = Message::parse(&hash_fixed);
+
+    let mut signature_fixed: [u8; 64] = [0; 64];
+    signature_fixed.copy_from_slice(&signature_bin.as_slice()[..64]);
+    let signature = Signature::parse(&signature_fixed);
+
+    let recovery_id = match RecoveryId::parse(recovery_id_u8) {
+        Ok(id) => id,
+        Err(_) => return (atoms::error(), atoms::invalid_recovery_id()).encode(env),
+    };
+
+    secp256k1_recover(env, message, signature, recovery_id)
 }
 
 fn create_public_key<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
@@ -157,6 +190,25 @@ fn create_public_key<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
         .copy_from_slice(&public_key_array);
 
     (atoms::ok(), public_key_result.release(env)).encode(env)
+}
+
+fn secp256k1_recover<'a>(
+    env: Env<'a>,
+    message: Message,
+    signature: Signature,
+    recovery_id: RecoveryId,
+) -> Term<'a> {
+    match secp256k1::recover(&message, &signature, &recovery_id) {
+        Ok(public_key) => {
+            let public_key_array = public_key.serialize();
+            let mut public_key_result: OwnedBinary = OwnedBinary::new(65).unwrap();
+            public_key_result
+                .as_mut_slice()
+                .copy_from_slice(&public_key_array);
+            (atoms::ok(), public_key_result.release(env)).encode(env)
+        }
+        Err(_) => (atoms::error(), atoms::recovery_failure()).encode(env),
+    }
 }
 
 fn secp256k1_sign<'a>(
