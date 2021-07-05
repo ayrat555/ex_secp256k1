@@ -7,11 +7,10 @@ defmodule ExSecp256k1.MixProject do
     [
       app: :ex_secp256k1,
       name: "ExSecp256k1",
-      version: "0.1.3",
+      version: "0.2.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
-      compilers: [:rustler] ++ Mix.compilers(),
-      rustler_crates: rustler_crates(),
+      compilers: Mix.compilers(),
       deps: deps(),
       docs: docs(),
       package: package(),
@@ -66,21 +65,9 @@ defmodule ExSecp256k1.MixProject do
 
   defp deps do
     [
-      {:rustler, "~> 0.22.0-rc.1"},
+      {:rustler, "~> 0.22"},
       {:benchee, "~> 1.0.1", only: :test},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
-
-  defp rustler_crates do
-    [
-      exsecp256k1: [
-        path: "native/exsecp256k1",
-        mode: rustc_mode(Mix.env())
-      ]
-    ]
-  end
-
-  defp rustc_mode(:prod), do: :release
-  defp rustc_mode(_), do: :debug
 end
