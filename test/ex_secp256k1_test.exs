@@ -38,11 +38,15 @@ defmodule ExSecp256k1Test do
     end
 
     test "fails if private_key is not binary", %{message: message} do
-      assert {:error, :private_key_not_binary} = ExSecp256k1.sign(message, nil)
+      assert_raise ArgumentError, fn ->
+        ExSecp256k1.sign(message, nil)
+      end
     end
 
     test "fails if message is not binary", %{private_key: private_key} do
-      assert {:error, :message_not_binary} = ExSecp256k1.sign(10, private_key)
+      assert_raise ArgumentError, fn ->
+        ExSecp256k1.sign(10, private_key)
+      end
     end
 
     @tag :perf
@@ -110,11 +114,15 @@ defmodule ExSecp256k1Test do
     end
 
     test "fails if private_key is not binary", %{message: message} do
-      assert {:error, :private_key_not_binary} = ExSecp256k1.sign_compact(message, nil)
+      assert_raise ArgumentError, fn ->
+        ExSecp256k1.sign_compact(message, nil)
+      end
     end
 
     test "fails if message is not binary", %{private_key: private_key} do
-      assert {:error, :message_not_binary} = ExSecp256k1.sign_compact(10, private_key)
+      assert_raise ArgumentError, fn ->
+        ExSecp256k1.sign_compact(10, private_key)
+      end
     end
 
     @tag :perf
@@ -199,19 +207,27 @@ defmodule ExSecp256k1Test do
     end
 
     test "fails to recover if hash is not binary", %{r: r, s: s, recovery_id: recovery_id} do
-      assert {:error, :hash_not_binary} = ExSecp256k1.recover(nil, r, s, recovery_id)
+      assert_raise ArgumentError, fn ->
+        ExSecp256k1.recover(nil, r, s, recovery_id)
+      end
     end
 
     test "fails to recover if r is not binary", %{hash: hash, s: s, recovery_id: recovery_id} do
-      assert {:error, :r_not_binary} = ExSecp256k1.recover(hash, 99, s, recovery_id)
+      assert_raise ArgumentError, fn ->
+        ExSecp256k1.recover(hash, 99, s, recovery_id)
+      end
     end
 
     test "fails to recover if s is not binary", %{hash: hash, r: r, recovery_id: recovery_id} do
-      assert {:error, :s_not_binary} = ExSecp256k1.recover(hash, r, %{}, recovery_id)
+      assert_raise ArgumentError, fn ->
+        ExSecp256k1.recover(hash, r, %{}, recovery_id)
+      end
     end
 
     test "fails to recover if recover_id is not number", %{hash: hash, r: r, s: s} do
-      assert {:error, :recovery_id_not_u8} = ExSecp256k1.recover(hash, r, s, "")
+      assert_raise ArgumentError, fn ->
+        ExSecp256k1.recover(hash, r, s, "")
+      end
     end
 
     test "fails to recover if recover_id is invalid", %{hash: hash, r: r, s: s} do
@@ -306,11 +322,15 @@ defmodule ExSecp256k1Test do
     end
 
     test "fails to recover if hash is not binary", %{r: r, s: s, recovery_id: recovery_id} do
-      assert {:error, :hash_not_binary} = ExSecp256k1.recover_compact(nil, r <> s, recovery_id)
+      assert_raise ArgumentError, fn ->
+        ExSecp256k1.recover_compact(nil, r <> s, recovery_id)
+      end
     end
 
     test "fails to recover if recover_id is not number", %{hash: hash, r: r, s: s} do
-      assert {:error, :recovery_id_not_u8} = ExSecp256k1.recover_compact(hash, r <> s, "")
+      assert_raise ArgumentError, fn ->
+        ExSecp256k1.recover_compact(hash, r <> s, "")
+      end
     end
 
     test "fails to recover if recover_id is invalid", %{hash: hash, r: r, s: s} do
@@ -380,7 +400,9 @@ defmodule ExSecp256k1Test do
     end
 
     test "fails to generate public key if private key is not binary" do
-      assert {:error, :private_key_not_binary} = ExSecp256k1.create_public_key(nil)
+      assert_raise ArgumentError, fn ->
+        ExSecp256k1.create_public_key(nil)
+      end
     end
 
     @tag :perf

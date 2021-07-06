@@ -4,41 +4,34 @@ use secp256k1::curve::Scalar;
 use secp256k1::{Message, PublicKey, RecoveryId, SecretKey, Signature};
 
 mod atoms {
-    rustler::rustler_atoms! {
-        atom ok;
-        atom error;
-        atom message_not_binary;
-        atom private_key_not_binary;
-        atom hash_not_binary;
-        atom signature_not_binary;
-        atom r_not_binary;
-        atom s_not_binary;
-        atom recovery_id_not_u8;
-        atom wrong_message_size;
-        atom wrong_private_key_size;
-        atom wrong_hash_size;
-        atom wrong_r_size;
-        atom wrong_s_size;
-        atom wrong_signature_size;
-        atom recovery_failure;
-        atom invalid_recovery_id;
+    rustler::atoms! {
+        ok,
+        error,
+        wrong_message_size,
+        wrong_private_key_size,
+        wrong_hash_size,
+        wrong_r_size,
+        wrong_s_size,
+        wrong_signature_size,
+        recovery_failure,
+        invalid_recovery_id
     }
 }
 
-rustler::rustler_export_nifs! {
+rustler::init!(
     "Elixir.ExSecp256k1",
     [
-        ("sign", 2, sign, rustler::SchedulerFlags::DirtyCpu),
-        ("sign_compact", 2, sign_compact, rustler::SchedulerFlags::DirtyCpu),
-        ("recover", 4, recover, rustler::SchedulerFlags::DirtyCpu),
-        ("recover_compact", 3, recover_compact, rustler::SchedulerFlags::DirtyCpu),
-        ("create_public_key", 1, create_public_key, rustler::SchedulerFlags::DirtyCpu)
-    ],
-    None
-}
+        sign,
+        sign_compact,
+        recover,
+        recover_compact,
+        create_public_key
+    ]
+);
 
-fn sign<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
-    let (Signature { s, r }, recid) = match secp256k1_sign(env, args) {
+#[rustler::nif]
+fn sign<'a>(env: Env<'a>, message_bin: Binary, private_key_bin: Binary) -> Term<'a> {
+    let (Signature { s, r }, recid) = match secp256k1_sign(env, message_bin, private_key_bin) {
         Ok(result) => result,
         Err(error) => return error,
     };
@@ -57,8 +50,9 @@ fn sign<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
         .encode(env)
 }
 
-fn sign_compact<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
-    let (signature, recovery_id) = match secp256k1_sign(env, args) {
+#[rustler::nif]
+fn sign_compact<'a>(env: Env<'a>, message_bin: Binary, private_key_bin: Binary) -> Term<'a> {
+    let (signature, recovery_id) = match secp256k1_sign(env, message_bin, private_key_bin) {
         Ok((result, recovery_id)) => (result.serialize(), recovery_id.serialize()),
         Err(error) => return error,
     };
@@ -70,27 +64,14 @@ fn sign_compact<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
     (atoms::ok(), (signature_bin.release(env), recovery_id)).encode(env)
 }
 
-fn recover<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
-    let hash_bin: Binary = match args[0].decode() {
-        Ok(binary) => binary,
-        Err(_error) => return (atoms::error(), atoms::hash_not_binary()).encode(env),
-    };
-
-    let r_bin: Binary = match args[1].decode() {
-        Ok(binary) => binary,
-        Err(_error) => return (atoms::error(), atoms::r_not_binary()).encode(env),
-    };
-
-    let s_bin: Binary = match args[2].decode() {
-        Ok(binary) => binary,
-        Err(_error) => return (atoms::error(), atoms::s_not_binary()).encode(env),
-    };
-
-    let recovery_id_u8: u8 = match args[3].decode() {
-        Ok(number) => number,
-        Err(_error) => return (atoms::error(), atoms::recovery_id_not_u8()).encode(env),
-    };
-
+#[rustler::nif]
+fn recover<'a>(
+    env: Env<'a>,
+    hash_bin: Binary,
+    r_bin: Binary,
+    s_bin: Binary,
+    recovery_id_u8: u8,
+) -> Term<'a> {
     if hash_bin.len() != 32 {
         return (atoms::error(), atoms::wrong_hash_size()).encode(env);
     }
@@ -127,22 +108,13 @@ fn recover<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
     secp256k1_recover(env, message, signature, recovery_id)
 }
 
-fn recover_compact<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
-    let hash_bin: Binary = match args[0].decode() {
-        Ok(binary) => binary,
-        Err(_error) => return (atoms::error(), atoms::hash_not_binary()).encode(env),
-    };
-
-    let signature_bin: Binary = match args[1].decode() {
-        Ok(binary) => binary,
-        Err(_error) => return (atoms::error(), atoms::signature_not_binary()).encode(env),
-    };
-
-    let recovery_id_u8: u8 = match args[2].decode() {
-        Ok(number) => number,
-        Err(_error) => return (atoms::error(), atoms::recovery_id_not_u8()).encode(env),
-    };
-
+#[rustler::nif]
+fn recover_compact<'a>(
+    env: Env<'a>,
+    hash_bin: Binary,
+    signature_bin: Binary,
+    recovery_id_u8: u8,
+) -> Term<'a> {
     if hash_bin.len() != 32 {
         return (atoms::error(), atoms::wrong_hash_size()).encode(env);
     }
@@ -167,12 +139,8 @@ fn recover_compact<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
     secp256k1_recover(env, message, signature, recovery_id)
 }
 
-fn create_public_key<'a>(env: Env<'a>, args: &[Term<'a>]) -> Term<'a> {
-    let private_key_bin: Binary = match args[0].decode() {
-        Ok(binary) => binary,
-        Err(_error) => return (atoms::error(), atoms::private_key_not_binary()).encode(env),
-    };
-
+#[rustler::nif]
+fn create_public_key<'a>(env: Env<'a>, private_key_bin: Binary) -> Term<'a> {
     if private_key_bin.len() != 32 {
         return (atoms::error(), atoms::wrong_private_key_size()).encode(env);
     }
@@ -213,18 +181,9 @@ fn secp256k1_recover<'a>(
 
 fn secp256k1_sign<'a>(
     env: Env<'a>,
-    args: &[Term<'a>],
+    message_bin: Binary,
+    private_key_bin: Binary,
 ) -> Result<(Signature, RecoveryId), Term<'a>> {
-    let message_bin: Binary = match args[0].decode() {
-        Ok(binary) => binary,
-        Err(_error) => return Err((atoms::error(), atoms::message_not_binary()).encode(env)),
-    };
-
-    let private_key_bin: Binary = match args[1].decode() {
-        Ok(binary) => binary,
-        Err(_error) => return Err((atoms::error(), atoms::private_key_not_binary()).encode(env)),
-    };
-
     if message_bin.len() != 32 {
         return Err((atoms::error(), atoms::wrong_message_size()).encode(env));
     }

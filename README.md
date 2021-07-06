@@ -17,7 +17,7 @@ dependencies in `mix.exs`:
 
 ```elixir
   [
-    {:ex_secp256k1, "~> 0.1.2"}
+    {:ex_secp256k1, "~> 0.2.0"}
   ]
 ```
 
@@ -46,8 +46,6 @@ private_key =
 
 {:ok {r_binary, s_binary, recovery_id_int}} = ExSecp256k1.sign(message, private_key)
 
-{:error, :message_not_binary} = ExSecp256k1.sign(10, private_key)
-
 {:ok {signature_bin, recovery_id_int}} = ExSecp256k1.sign_compact(message, private_key)
 ```
 
@@ -73,6 +71,15 @@ recovery_id = 0
 
 
 {:ok, _public_key_binary} = ExSecp256k1.recover_compact(hash, r <> s, recovery_id)
+```
+
+
+All nif functions will fail with `ArgumentError` if parameters of wrong types are provided:
+
+```elixir
+assert_raise ArgumentError, fn ->
+  ExSecp256k1.sign(message, nil)
+end
 ```
 
 ## Contributing
