@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1
+* Update the libsecp256k1 rust library to 0.6.0
+
 ## 0.2.0
 * Update rustler to `0.22.0` for otp 24 support
 
