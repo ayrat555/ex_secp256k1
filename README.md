@@ -17,7 +17,7 @@ dependencies in `mix.exs`:
 
 ```elixir
   [
-    {:ex_secp256k1, "~> 0.2.0"}
+    {:ex_secp256k1, "~> 0.2.1"}
   ]
 ```
 
