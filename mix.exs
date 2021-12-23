@@ -7,7 +7,7 @@ defmodule ExSecp256k1.MixProject do
     [
       app: :ex_secp256k1,
       name: "ExSecp256k1",
-      version: "0.2.1",
+      version: "0.3.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       compilers: Mix.compilers(),
@@ -31,7 +31,7 @@ defmodule ExSecp256k1.MixProject do
       maintainers: ["Ayrat Badykov"],
       licenses: ["MIT"],
       links: %{
-        "Changelog" => "#{@source_url}/blog/master/CHANGELOG.md",
+        "Changelog" => "#{@source_url}/blob/master/CHANGELOG.md",
         "GitHub" => @source_url
       },
       files: [
