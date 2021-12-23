@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+* Update rustler from 0.22 to 0.23
+* Update the libsecp256k1 rust library to 0.7.0
+
 ## 0.2.1
 * Update the libsecp256k1 rust library to 0.6.0
 
