@@ -65,7 +65,7 @@ defmodule ExSecp256k1.MixProject do
 
   defp deps do
     [
-      {:rustler, "~> 0.22"},
+      {:rustler, "~> 0.23"},
       {:benchee, "~> 1.0.1", only: :test},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
