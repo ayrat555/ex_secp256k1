@@ -17,7 +17,7 @@ dependencies in `mix.exs`:
 
 ```elixir
   [
-    {:ex_secp256k1, "~> 0.3.0"}
+    {:ex_secp256k1, "~> 0.3"}
   ]
 ```
 
@@ -80,7 +80,7 @@ private_key = :crypto.strong_rand_bytes(32)
 {:ok, public_key} = ExSecp256k1.create_public_key(private_key)
 
 
-{:ok, _expected_result} = ExSecp256k1.public_key_tweak_add(public_key, private_key)
+{:ok, _result} = ExSecp256k1.public_key_tweak_add(public_key, private_key)
 ```
 
 
