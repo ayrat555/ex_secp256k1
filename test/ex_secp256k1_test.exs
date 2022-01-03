@@ -438,4 +438,59 @@ defmodule ExSecp256k1Test do
       )
     end
   end
+
+  describe "public_key_tweak_add/1" do
+    test "adds over ec" do
+      public_key =
+        <<4, 204, 170, 92, 229, 234, 207, 153, 33, 250, 27, 208, 37, 71, 183, 155, 104, 155, 45,
+          114, 7, 156, 83, 199, 245, 83, 32, 128, 45, 174, 96, 24, 38, 220, 210, 198, 20, 132,
+          174, 75, 63, 131, 95, 120, 101, 186, 93, 179, 95, 14, 206, 46, 48, 6, 129, 8, 146, 40,
+          135, 251, 42, 71, 4, 83, 222>>
+
+      private_key =
+        <<50, 8, 92, 222, 223, 155, 132, 50, 53, 227, 114, 79, 88, 11, 248, 24, 239, 76, 236, 39,
+          195, 198, 112, 133, 224, 41, 65, 138, 91, 47, 111, 43>>
+
+      expected_result =
+        <<4, 33, 12, 208, 46, 39, 229, 235, 74, 219, 192, 21, 114, 1, 200, 119, 77, 131, 62, 118,
+          230, 167, 168, 25, 180, 53, 141, 198, 233, 45, 130, 159, 207, 223, 16, 93, 169, 60, 12,
+          141, 249, 162, 153, 46, 18, 6, 110, 98, 182, 122, 152, 245, 160, 60, 47, 180, 100, 241,
+          236, 69, 126, 35, 234, 59, 87>>
+
+      assert {:ok, ^expected_result} = ExSecp256k1.public_key_tweak_add(public_key, private_key)
+    end
+
+    @tag :perf
+    @tag timeout: 300_000
+    test "sequential performance test" do
+      Benchee.run(
+        %{
+          "ex_secp256k1 public_key_tweak_add seq" => fn ->
+            private_key = :crypto.strong_rand_bytes(32)
+            {:ok, public_key} = ExSecp256k1.create_public_key(private_key)
+            {:ok, _expected_result} = ExSecp256k1.public_key_tweak_add(public_key, private_key)
+          end
+        },
+        time: 100,
+        memory_time: 10
+      )
+    end
+
+    @tag :perf
+    @tag timeout: 300_000
+    test "parallel performance test" do
+      Benchee.run(
+        %{
+          "ex_secp256k1 public_key_tweak_add par" => fn ->
+            private_key = :crypto.strong_rand_bytes(32)
+            {:ok, public_key} = ExSecp256k1.create_public_key(private_key)
+            {:ok, _expected_result} = ExSecp256k1.public_key_tweak_add(public_key, private_key)
+          end
+        },
+        time: 100,
+        memory_time: 10,
+        parallel: 6
+      )
+    end
+  end
 end

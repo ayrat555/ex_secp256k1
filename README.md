@@ -6,7 +6,7 @@
 [![Github.com](https://img.shields.io/github/last-commit/omgnetwork/ex_secp256k1.svg)](https://github.com/omgnetwork/ex_secp256k1)
 
 
-Rust Native Implemented Function (NIF) that wraps a couple functions from the [libsecp256k1](https://github.com/paritytech/libsecp256k1) Rust library. It only wraps `secp256k1` functions used in Ethereum.
+Rust Native Implemented Function (NIF) that wraps a couple functions from the [libsecp256k1](https://github.com/paritytech/libsecp256k1) Rust library.
 
 ## Installation
 
@@ -17,7 +17,7 @@ dependencies in `mix.exs`:
 
 ```elixir
   [
-    {:ex_secp256k1, "~> 0.3.0"}
+    {:ex_secp256k1, "~> 0.3"}
   ]
 ```
 
@@ -71,6 +71,16 @@ recovery_id = 0
 
 
 {:ok, _public_key_binary} = ExSecp256k1.recover_compact(hash, r <> s, recovery_id)
+```
+
+Additive tweaking of public key (`ExSecp256k1.public_key_tweak_add/2`):
+
+```elixir
+private_key = :crypto.strong_rand_bytes(32)
+{:ok, public_key} = ExSecp256k1.create_public_key(private_key)
+
+
+{:ok, _result} = ExSecp256k1.public_key_tweak_add(public_key, private_key)
 ```
 
 

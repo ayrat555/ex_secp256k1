@@ -9,13 +9,17 @@ mod atoms {
         error,
         wrong_message_size,
         wrong_private_key_size,
+        wrong_public_key_size,
+        wrong_tweak_key_size,
         wrong_hash_size,
         wrong_r_size,
         wrong_s_size,
         wrong_signature_size,
         recovery_failure,
         invalid_recovery_id,
-        invalid_signature
+        invalid_signature,
+        invalid_public_key,
+        tweak_add_failure
     }
 }
 
@@ -26,7 +30,8 @@ rustler::init!(
         sign_compact,
         recover,
         recover_compact,
-        create_public_key
+        create_public_key,
+        public_key_tweak_add
     ]
 );
 
@@ -162,6 +167,46 @@ fn create_public_key<'a>(env: Env<'a>, private_key_bin: Binary) -> Term<'a> {
         .copy_from_slice(&public_key_array);
 
     (atoms::ok(), public_key_result.release(env)).encode(env)
+}
+
+#[rustler::nif]
+fn public_key_tweak_add<'a>(
+    env: Env<'a>,
+    public_key_bin: Binary,
+    tweak_key_bin: Binary,
+) -> Term<'a> {
+    if public_key_bin.len() != 65 {
+        return (atoms::error(), atoms::wrong_public_key_size()).encode(env);
+    }
+
+    let public_key_slice = public_key_bin.as_slice();
+    let mut public_key_fixed: [u8; 65] = [0; 65];
+    public_key_fixed.copy_from_slice(&public_key_slice[0..65]);
+
+    if tweak_key_bin.len() != 32 {
+        return (atoms::error(), atoms::wrong_tweak_key_size()).encode(env);
+    }
+
+    let mut public_key = match PublicKey::parse(&public_key_fixed) {
+        Ok(key) => key,
+        Err(_) => return (atoms::error(), atoms::invalid_public_key()).encode(env),
+    };
+
+    let mut tweak_key_fixed: [u8; 32] = [0; 32];
+    tweak_key_fixed.copy_from_slice(&tweak_key_bin.as_slice()[..32]);
+    let tweak_key = SecretKey::parse(&tweak_key_fixed).unwrap();
+
+    if let Err(_) = public_key.tweak_add_assign(&tweak_key) {
+        return (atoms::error(), atoms::tweak_add_failure()).encode(env);
+    }
+
+    let mut erl_bin: OwnedBinary = OwnedBinary::new(65).unwrap();
+    let public_key_serialized = public_key.serialize();
+    erl_bin
+        .as_mut_slice()
+        .copy_from_slice(&public_key_serialized);
+
+    (atoms::ok(), erl_bin.release(env)).encode(env)
 }
 
 fn secp256k1_recover<'a>(

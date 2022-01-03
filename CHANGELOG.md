@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+* Add wrapper for additive tweaking of public key
+
 ## 0.3.0
 
 * Update rustler from 0.22 to 0.23
