@@ -7,7 +7,7 @@ defmodule ExSecp256k1.MixProject do
     [
       app: :ex_secp256k1,
       name: "ExSecp256k1",
-      version: "0.3.1",
+      version: "0.3.2",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       compilers: Mix.compilers(),
