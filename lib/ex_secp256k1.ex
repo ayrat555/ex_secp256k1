@@ -16,4 +16,6 @@ defmodule ExSecp256k1 do
   def create_public_key(_private_key), do: :erlang.nif_error(:nif_not_loaded)
 
   def public_key_tweak_add(_public_key, _tweak_key), do: :erlang.nif_error(:nif_not_loaded)
+
+  def public_key_decompress(_public_key), do: :erlang.nif_error(:nif_not_loaded)
 end

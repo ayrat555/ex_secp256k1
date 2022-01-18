@@ -439,7 +439,7 @@ defmodule ExSecp256k1Test do
     end
   end
 
-  describe "public_key_tweak_add/1" do
+  describe "public_key_tweak_add/2" do
     test "adds over ec" do
       public_key =
         <<4, 204, 170, 92, 229, 234, 207, 153, 33, 250, 27, 208, 37, 71, 183, 155, 104, 155, 45,
@@ -491,6 +491,33 @@ defmodule ExSecp256k1Test do
         memory_time: 10,
         parallel: 6
       )
+    end
+  end
+
+  describe "public_key_decompress/1" do
+    test "decompresses public key" do
+      compressed_key =
+        <<2, 204, 170, 92, 229, 234, 207, 153, 33, 250, 27, 208, 37, 71, 183, 155, 104, 155, 45,
+          114, 7, 156, 83, 199, 245, 83, 32, 128, 45, 174, 96, 24, 38>>
+
+      uncompressed_key =
+        <<4, 204, 170, 92, 229, 234, 207, 153, 33, 250, 27, 208, 37, 71, 183, 155, 104, 155, 45,
+          114, 7, 156, 83, 199, 245, 83, 32, 128, 45, 174, 96, 24, 38, 220, 210, 198, 20, 132,
+          174, 75, 63, 131, 95, 120, 101, 186, 93, 179, 95, 14, 206, 46, 48, 6, 129, 8, 146, 40,
+          135, 251, 42, 71, 4, 83, 222>>
+
+      assert {:ok, ^uncompressed_key} = ExSecp256k1.public_key_decompress(compressed_key)
+    end
+
+    test "fails to decompress public key" do
+      uncompressed_key =
+        <<4, 204, 170, 92, 229, 234, 207, 153, 33, 250, 27, 208, 37, 71, 183, 155, 104, 155, 45,
+          114, 7, 156, 83, 199, 245, 83, 32, 128, 45, 174, 96, 24, 38, 220, 210, 198, 20, 132,
+          174, 75, 63, 131, 95, 120, 101, 186, 93, 179, 95, 14, 206, 46, 48, 6, 129, 8, 146, 40,
+          135, 251, 42, 71, 4, 83, 222>>
+
+      assert {:error, :wrong_public_key_size} =
+               ExSecp256k1.public_key_decompress(uncompressed_key)
     end
   end
 end

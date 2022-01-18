@@ -83,6 +83,15 @@ private_key = :crypto.strong_rand_bytes(32)
 {:ok, _result} = ExSecp256k1.public_key_tweak_add(public_key, private_key)
 ```
 
+Public key decompression (`ExSecp256k1.public_key_decompress/1`):
+
+```elixir
+compressed_key =
+  <<2, 204, 170, 92, 229, 234, 207, 153, 33, 250, 27, 208, 37, 71, 183, 155, 104, 155, 45,
+    114, 7, 156, 83, 199, 245, 83, 32, 128, 45, 174, 96, 24, 38>>
+
+{:ok, _uncompressed_key} = ExSecp256k1.public_key_decompress(compressed_key)
+```
 
 All nif functions will fail with `ArgumentError` if parameters of wrong types are provided:
 
