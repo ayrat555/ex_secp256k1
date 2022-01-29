@@ -32,7 +32,8 @@ rustler::init!(
         recover_compact,
         create_public_key,
         public_key_tweak_add,
-        public_key_decompress
+        public_key_decompress,
+        public_key_compress
     ]
 );
 
@@ -227,6 +228,29 @@ fn public_key_decompress<'a>(env: Env<'a>, compressed_public_key_bin: Binary) ->
 
     let public_key_array = public_key.serialize();
     let mut public_key_result: OwnedBinary = OwnedBinary::new(65).unwrap();
+    public_key_result
+        .as_mut_slice()
+        .copy_from_slice(&public_key_array);
+    (atoms::ok(), public_key_result.release(env)).encode(env)
+}
+
+#[rustler::nif]
+fn public_key_compress<'a>(env: Env<'a>, public_key_bin: Binary) -> Term<'a> {
+    if public_key_bin.len() != 65 {
+        return (atoms::error(), atoms::wrong_public_key_size()).encode(env);
+    }
+
+    let public_key_slice = public_key_bin.as_slice();
+    let mut public_key_fixed: [u8; 65] = [0; 65];
+    public_key_fixed.copy_from_slice(&public_key_slice[0..65]);
+
+    let public_key = match PublicKey::parse(&public_key_fixed) {
+        Ok(key) => key,
+        Err(_) => return (atoms::error(), atoms::invalid_public_key()).encode(env),
+    };
+
+    let public_key_array = public_key.serialize_compressed();
+    let mut public_key_result: OwnedBinary = OwnedBinary::new(33).unwrap();
     public_key_result
         .as_mut_slice()
         .copy_from_slice(&public_key_array);
