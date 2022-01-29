@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3
+
+* Add wrapper for public key compression
+
 ## 0.3.2
 
 * Add wrapper for public key decompression

@@ -93,6 +93,18 @@ compressed_key =
 {:ok, _uncompressed_key} = ExSecp256k1.public_key_decompress(compressed_key)
 ```
 
+Public key compression (`ExSecp256k1.public_key_compress/1`):
+
+```elixir
+uncompressed_key =
+        <<4, 204, 170, 92, 229, 234, 207, 153, 33, 250, 27, 208, 37, 71, 183, 155, 104, 155, 45,
+          114, 7, 156, 83, 199, 245, 83, 32, 128, 45, 174, 96, 24, 38, 220, 210, 198, 20, 132,
+          174, 75, 63, 131, 95, 120, 101, 186, 93, 179, 95, 14, 206, 46, 48, 6, 129, 8, 146, 40,
+          135, 251, 42, 71, 4, 83, 222>>
+
+assert {:ok, _compressed_key} = ExSecp256k1.public_key_compress(uncompressed_key)
+```
+
 All nif functions will fail with `ArgumentError` if parameters of wrong types are provided:
 
 ```elixir
