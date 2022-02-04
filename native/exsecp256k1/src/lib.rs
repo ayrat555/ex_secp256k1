@@ -19,7 +19,8 @@ mod atoms {
         invalid_signature,
         invalid_public_key,
         invalid_private_key,
-        tweak_add_failure
+        tweak_add_failure,
+        failed_to_verify
     }
 }
 
@@ -33,7 +34,8 @@ rustler::init!(
         create_public_key,
         public_key_tweak_add,
         public_key_decompress,
-        public_key_compress
+        public_key_compress,
+        verify
     ]
 );
 
@@ -221,6 +223,34 @@ fn public_key_compress<'a>(env: Env<'a>, public_key_bin: Binary) -> Term<'a> {
         .as_mut_slice()
         .copy_from_slice(&public_key_array);
     (atoms::ok(), public_key_result.release(env)).encode(env)
+}
+
+#[rustler::nif]
+fn verify<'a>(
+    env: Env<'a>,
+    message_bin: Binary,
+    signature_bin: Binary,
+    public_key_bin: Binary,
+) -> Term<'a> {
+    let message = match parse_message(env, message_bin) {
+        Ok(message) => message,
+        Err(err) => return err,
+    };
+    let signature = match parse_signature(env, signature_bin) {
+        Ok(signature) => signature,
+        Err(err) => return err,
+    };
+
+    let public_key = match parse_public_key(env, public_key_bin) {
+        Ok(public_key) => public_key,
+        Err(err) => return err,
+    };
+
+    if libsecp256k1::verify(&message, &signature, &public_key) {
+        atoms::ok().encode(env)
+    } else {
+        (atoms::failed_to_verify(), atoms::invalid_recovery_id()).encode(env)
+    }
 }
 
 fn secp256k1_recover<'a>(

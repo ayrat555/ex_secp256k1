@@ -545,4 +545,16 @@ defmodule ExSecp256k1Test do
       assert {:error, :wrong_public_key_size} = ExSecp256k1.public_key_compress(compressed_key)
     end
   end
+
+  describe "verify/3" do
+    test "verifies signature" do
+      message = :crypto.strong_rand_bytes(32)
+      private_key = :crypto.strong_rand_bytes(32)
+      {:ok, {signature, _r}} = ExSecp256k1.sign_compact(message, private_key)
+
+      {:ok, public_key} = ExSecp256k1.create_public_key(private_key)
+
+      assert :ok = ExSecp256k1.verify(message, signature, public_key)
+    end
+  end
 end
