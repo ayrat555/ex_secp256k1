@@ -249,7 +249,7 @@ fn verify<'a>(
     if libsecp256k1::verify(&message, &signature, &public_key) {
         atoms::ok().encode(env)
     } else {
-        (atoms::failed_to_verify(), atoms::invalid_recovery_id()).encode(env)
+        (atoms::error(), atoms::failed_to_verify()).encode(env)
     }
 }
 

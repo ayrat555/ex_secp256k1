@@ -556,5 +556,17 @@ defmodule ExSecp256k1Test do
 
       assert :ok = ExSecp256k1.verify(message, signature, public_key)
     end
+
+    test "fails to verify" do
+      message = :crypto.strong_rand_bytes(32)
+      private_key = :crypto.strong_rand_bytes(32)
+
+      {:ok, {signature, _r}} = ExSecp256k1.sign_compact(message, private_key)
+
+      random_private_key = :crypto.strong_rand_bytes(32)
+      {:ok, public_key} = ExSecp256k1.create_public_key(random_private_key)
+
+      assert {:error, :failed_to_verify} = ExSecp256k1.verify(message, signature, public_key)
+    end
   end
 end
