@@ -11,7 +11,6 @@ mod atoms {
         wrong_private_key_size,
         wrong_public_key_size,
         wrong_tweak_key_size,
-        wrong_hash_size,
         wrong_r_size,
         wrong_s_size,
         wrong_signature_size,
@@ -19,6 +18,7 @@ mod atoms {
         invalid_recovery_id,
         invalid_signature,
         invalid_public_key,
+        invalid_private_key,
         tweak_add_failure
     }
 }
@@ -80,10 +80,6 @@ fn recover<'a>(
     s_bin: Binary,
     recovery_id_u8: u8,
 ) -> Term<'a> {
-    if hash_bin.len() != 32 {
-        return (atoms::error(), atoms::wrong_hash_size()).encode(env);
-    }
-
     if r_bin.len() != 32 {
         return (atoms::error(), atoms::wrong_r_size()).encode(env);
     }
@@ -92,9 +88,10 @@ fn recover<'a>(
         return (atoms::error(), atoms::wrong_s_size()).encode(env);
     }
 
-    let mut hash_fixed: [u8; 32] = [0; 32];
-    hash_fixed.copy_from_slice(&hash_bin.as_slice()[..32]);
-    let message = Message::parse(&hash_fixed);
+    let message = match parse_message(env, hash_bin) {
+        Ok(message) => message,
+        Err(err) => return err,
+    };
 
     let mut s = Scalar::default();
 
@@ -108,9 +105,9 @@ fn recover<'a>(
     let _ = r.set_b32(&r_fixed);
 
     let signature = Signature { r, s };
-    let recovery_id = match RecoveryId::parse(recovery_id_u8) {
+    let recovery_id = match parse_recovery_id(env, recovery_id_u8) {
         Ok(id) => id,
-        Err(_) => return (atoms::error(), atoms::invalid_recovery_id()).encode(env),
+        Err(err) => return err,
     };
 
     secp256k1_recover(env, message, signature, recovery_id)
@@ -123,28 +120,19 @@ fn recover_compact<'a>(
     signature_bin: Binary,
     recovery_id_u8: u8,
 ) -> Term<'a> {
-    if hash_bin.len() != 32 {
-        return (atoms::error(), atoms::wrong_hash_size()).encode(env);
-    }
-
-    if signature_bin.len() != 64 {
-        return (atoms::error(), atoms::wrong_signature_size()).encode(env);
-    }
-
-    let mut hash_fixed: [u8; 32] = [0; 32];
-    hash_fixed.copy_from_slice(&hash_bin.as_slice()[..32]);
-    let message = Message::parse(&hash_fixed);
-
-    let mut signature_fixed: [u8; 64] = [0; 64];
-    signature_fixed.copy_from_slice(&signature_bin.as_slice()[..64]);
-    let signature = match Signature::parse_standard(&signature_fixed) {
-        Ok(sign_result) => sign_result,
-        Err(_) => return (atoms::error(), atoms::invalid_signature()).encode(env),
+    let message = match parse_message(env, hash_bin) {
+        Ok(message) => message,
+        Err(err) => return err,
     };
 
-    let recovery_id = match RecoveryId::parse(recovery_id_u8) {
+    let signature = match parse_signature(env, signature_bin) {
+        Ok(sign_result) => sign_result,
+        Err(err) => return err,
+    };
+
+    let recovery_id = match parse_recovery_id(env, recovery_id_u8) {
         Ok(id) => id,
-        Err(_) => return (atoms::error(), atoms::invalid_recovery_id()).encode(env),
+        Err(err) => return err,
     };
 
     secp256k1_recover(env, message, signature, recovery_id)
@@ -152,13 +140,10 @@ fn recover_compact<'a>(
 
 #[rustler::nif]
 fn create_public_key<'a>(env: Env<'a>, private_key_bin: Binary) -> Term<'a> {
-    if private_key_bin.len() != 32 {
-        return (atoms::error(), atoms::wrong_private_key_size()).encode(env);
-    }
-
-    let mut private_key_fixed: [u8; 32] = [0; 32];
-    private_key_fixed.copy_from_slice(&private_key_bin.as_slice()[..32]);
-    let private_key = SecretKey::parse(&private_key_fixed).unwrap();
+    let private_key = match parse_private_key(env, private_key_bin) {
+        Ok(key) => key,
+        Err(err) => return err,
+    };
 
     let public_key = PublicKey::from_secret_key(&private_key);
 
@@ -177,26 +162,15 @@ fn public_key_tweak_add<'a>(
     public_key_bin: Binary,
     tweak_key_bin: Binary,
 ) -> Term<'a> {
-    if public_key_bin.len() != 65 {
-        return (atoms::error(), atoms::wrong_public_key_size()).encode(env);
-    }
-
-    let public_key_slice = public_key_bin.as_slice();
-    let mut public_key_fixed: [u8; 65] = [0; 65];
-    public_key_fixed.copy_from_slice(&public_key_slice[0..65]);
-
-    if tweak_key_bin.len() != 32 {
-        return (atoms::error(), atoms::wrong_tweak_key_size()).encode(env);
-    }
-
-    let mut public_key = match PublicKey::parse(&public_key_fixed) {
+    let mut public_key = match parse_public_key(env, public_key_bin) {
         Ok(key) => key,
-        Err(_) => return (atoms::error(), atoms::invalid_public_key()).encode(env),
+        Err(err) => return err,
     };
 
-    let mut tweak_key_fixed: [u8; 32] = [0; 32];
-    tweak_key_fixed.copy_from_slice(&tweak_key_bin.as_slice()[..32]);
-    let tweak_key = SecretKey::parse(&tweak_key_fixed).unwrap();
+    let tweak_key = match parse_private_key(env, tweak_key_bin) {
+        Ok(key) => key,
+        Err(err) => return err,
+    };
 
     if let Err(_) = public_key.tweak_add_assign(&tweak_key) {
         return (atoms::error(), atoms::tweak_add_failure()).encode(env);
@@ -236,17 +210,9 @@ fn public_key_decompress<'a>(env: Env<'a>, compressed_public_key_bin: Binary) ->
 
 #[rustler::nif]
 fn public_key_compress<'a>(env: Env<'a>, public_key_bin: Binary) -> Term<'a> {
-    if public_key_bin.len() != 65 {
-        return (atoms::error(), atoms::wrong_public_key_size()).encode(env);
-    }
-
-    let public_key_slice = public_key_bin.as_slice();
-    let mut public_key_fixed: [u8; 65] = [0; 65];
-    public_key_fixed.copy_from_slice(&public_key_slice[0..65]);
-
-    let public_key = match PublicKey::parse(&public_key_fixed) {
+    let public_key = match parse_public_key(env, public_key_bin) {
         Ok(key) => key,
-        Err(_) => return (atoms::error(), atoms::invalid_public_key()).encode(env),
+        Err(err) => return err,
     };
 
     let public_key_array = public_key.serialize_compressed();
@@ -281,10 +247,26 @@ fn secp256k1_sign<'a>(
     message_bin: Binary,
     private_key_bin: Binary,
 ) -> Result<(Signature, RecoveryId), Term<'a>> {
+    let message = parse_message(env, message_bin)?;
+    let private_key = parse_private_key(env, private_key_bin)?;
+
+    Ok(libsecp256k1::sign(&message, &private_key))
+}
+
+fn parse_message<'a>(env: Env<'a>, message_bin: Binary) -> Result<Message, Term<'a>> {
     if message_bin.len() != 32 {
         return Err((atoms::error(), atoms::wrong_message_size()).encode(env));
     }
 
+    let mut message_fixed: [u8; 32] = [0; 32];
+    message_fixed.copy_from_slice(&message_bin.as_slice()[..32]);
+
+    let message = Message::parse(&message_fixed);
+
+    Ok(message)
+}
+
+fn parse_private_key<'a>(env: Env<'a>, private_key_bin: Binary) -> Result<SecretKey, Term<'a>> {
     if private_key_bin.len() != 32 {
         return Err((atoms::error(), atoms::wrong_private_key_size()).encode(env));
     }
@@ -292,11 +274,44 @@ fn secp256k1_sign<'a>(
     let mut private_key_fixed: [u8; 32] = [0; 32];
     private_key_fixed.copy_from_slice(&private_key_bin.as_slice()[..32]);
 
-    let mut message_fixed: [u8; 32] = [0; 32];
-    message_fixed.copy_from_slice(&message_bin.as_slice()[..32]);
+    match SecretKey::parse(&private_key_fixed) {
+        Ok(private_key) => Ok(private_key),
+        Err(_) => return Err((atoms::error(), atoms::invalid_private_key()).encode(env)),
+    }
+}
 
-    let private_key = SecretKey::parse(&private_key_fixed).unwrap();
-    let message = Message::parse(&message_fixed);
+fn parse_public_key<'a>(env: Env<'a>, public_key_bin: Binary) -> Result<PublicKey, Term<'a>> {
+    if public_key_bin.len() != 65 {
+        return Err((atoms::error(), atoms::wrong_public_key_size()).encode(env));
+    }
 
-    Ok(libsecp256k1::sign(&message, &private_key))
+    let public_key_slice = public_key_bin.as_slice();
+    let mut public_key_fixed: [u8; 65] = [0; 65];
+    public_key_fixed.copy_from_slice(&public_key_slice[0..65]);
+
+    match PublicKey::parse(&public_key_fixed) {
+        Ok(key) => Ok(key),
+        Err(_) => return Err((atoms::error(), atoms::invalid_public_key()).encode(env)),
+    }
+}
+
+fn parse_signature<'a>(env: Env<'a>, signature_bin: Binary) -> Result<Signature, Term<'a>> {
+    if signature_bin.len() != 64 {
+        return Err((atoms::error(), atoms::wrong_signature_size()).encode(env));
+    }
+
+    let mut signature_fixed: [u8; 64] = [0; 64];
+    signature_fixed.copy_from_slice(&signature_bin.as_slice()[..64]);
+
+    match Signature::parse_standard(&signature_fixed) {
+        Ok(sign_result) => Ok(sign_result),
+        Err(_) => return Err((atoms::error(), atoms::invalid_signature()).encode(env)),
+    }
+}
+
+fn parse_recovery_id<'a>(env: Env<'a>, recovery_id: u8) -> Result<RecoveryId, Term<'a>> {
+    match RecoveryId::parse(recovery_id) {
+        Ok(id) => Ok(id),
+        Err(_) => return Err((atoms::error(), atoms::invalid_recovery_id()).encode(env)),
+    }
 }
