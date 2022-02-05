@@ -11,8 +11,6 @@ mod atoms {
         wrong_private_key_size,
         wrong_public_key_size,
         wrong_tweak_key_size,
-        wrong_scalar_size,
-        scalar_overflow,
         wrong_signature_size,
         recovery_failure,
         invalid_recovery_id,
@@ -21,7 +19,7 @@ mod atoms {
         invalid_private_key,
         invalid_r,
         invalid_s,
-        tweak_add_failure,
+        tweak_failure,
         failed_to_verify
     }
 }
@@ -35,6 +33,7 @@ rustler::init!(
         recover_compact,
         create_public_key,
         public_key_tweak_add,
+        public_key_tweak_mult,
         public_key_decompress,
         public_key_compress,
         verify
@@ -169,7 +168,36 @@ fn public_key_tweak_add<'a>(
     };
 
     if let Err(_) = public_key.tweak_add_assign(&tweak_key) {
-        return (atoms::error(), atoms::tweak_add_failure()).encode(env);
+        return (atoms::error(), atoms::tweak_failure()).encode(env);
+    }
+
+    let mut erl_bin: OwnedBinary = OwnedBinary::new(65).unwrap();
+    let public_key_serialized = public_key.serialize();
+    erl_bin
+        .as_mut_slice()
+        .copy_from_slice(&public_key_serialized);
+
+    (atoms::ok(), erl_bin.release(env)).encode(env)
+}
+
+#[rustler::nif]
+fn public_key_tweak_mult<'a>(
+    env: Env<'a>,
+    public_key_bin: Binary,
+    tweak_key_bin: Binary,
+) -> Term<'a> {
+    let mut public_key = match parse_public_key(env, public_key_bin) {
+        Ok(key) => key,
+        Err(err) => return err,
+    };
+
+    let tweak_key = match parse_private_key(env, tweak_key_bin) {
+        Ok(key) => key,
+        Err(err) => return err,
+    };
+
+    if let Err(_) = public_key.tweak_mul_assign(&tweak_key) {
+        return (atoms::error(), atoms::tweak_failure()).encode(env);
     }
 
     let mut erl_bin: OwnedBinary = OwnedBinary::new(65).unwrap();
