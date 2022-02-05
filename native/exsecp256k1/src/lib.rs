@@ -25,7 +25,7 @@ mod atoms {
 }
 
 rustler::init!(
-    "Elixir.ExSecp256k1",
+    "Elixir.ExSecp256k1.Impl",
     [
         sign,
         sign_compact,

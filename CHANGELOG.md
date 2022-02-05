@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4
+
+* Add wrappers for more functions
+* Change some error atoms
+
 ## 0.3.3
 
 * Add wrapper for public key compression
