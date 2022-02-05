@@ -36,6 +36,8 @@ rustler::init!(
         public_key_tweak_mult,
         public_key_decompress,
         public_key_compress,
+        private_key_tweak_add,
+        private_key_tweak_mult,
         verify
     ]
 );
@@ -141,14 +143,9 @@ fn create_public_key<'a>(env: Env<'a>, private_key_bin: Binary) -> Term<'a> {
     };
 
     let public_key = PublicKey::from_secret_key(&private_key);
+    let serialized_public_key = serialize_public_key(public_key);
 
-    let public_key_array = public_key.serialize();
-    let mut public_key_result: OwnedBinary = OwnedBinary::new(65).unwrap();
-    public_key_result
-        .as_mut_slice()
-        .copy_from_slice(&public_key_array);
-
-    (atoms::ok(), public_key_result.release(env)).encode(env)
+    (atoms::ok(), serialized_public_key.release(env)).encode(env)
 }
 
 #[rustler::nif]
@@ -171,13 +168,8 @@ fn public_key_tweak_add<'a>(
         return (atoms::error(), atoms::tweak_failure()).encode(env);
     }
 
-    let mut erl_bin: OwnedBinary = OwnedBinary::new(65).unwrap();
-    let public_key_serialized = public_key.serialize();
-    erl_bin
-        .as_mut_slice()
-        .copy_from_slice(&public_key_serialized);
-
-    (atoms::ok(), erl_bin.release(env)).encode(env)
+    let serialized_public_key = serialize_public_key(public_key);
+    (atoms::ok(), serialized_public_key.release(env)).encode(env)
 }
 
 #[rustler::nif]
@@ -200,13 +192,56 @@ fn public_key_tweak_mult<'a>(
         return (atoms::error(), atoms::tweak_failure()).encode(env);
     }
 
-    let mut erl_bin: OwnedBinary = OwnedBinary::new(65).unwrap();
-    let public_key_serialized = public_key.serialize();
-    erl_bin
-        .as_mut_slice()
-        .copy_from_slice(&public_key_serialized);
+    let serialized_public_key = serialize_public_key(public_key);
+    (atoms::ok(), serialized_public_key.release(env)).encode(env)
+}
 
-    (atoms::ok(), erl_bin.release(env)).encode(env)
+#[rustler::nif]
+fn private_key_tweak_add<'a>(
+    env: Env<'a>,
+    private_key_bin: Binary,
+    tweak_key_bin: Binary,
+) -> Term<'a> {
+    let mut private_key = match parse_private_key(env, private_key_bin) {
+        Ok(key) => key,
+        Err(err) => return err,
+    };
+
+    let tweak_key = match parse_private_key(env, tweak_key_bin) {
+        Ok(key) => key,
+        Err(err) => return err,
+    };
+
+    if let Err(_) = private_key.tweak_add_assign(&tweak_key) {
+        return (atoms::error(), atoms::tweak_failure()).encode(env);
+    }
+
+    let serialized_private_key = serialize_private_key(private_key);
+    (atoms::ok(), serialized_private_key.release(env)).encode(env)
+}
+
+#[rustler::nif]
+fn private_key_tweak_mult<'a>(
+    env: Env<'a>,
+    private_key_bin: Binary,
+    tweak_key_bin: Binary,
+) -> Term<'a> {
+    let mut private_key = match parse_private_key(env, private_key_bin) {
+        Ok(key) => key,
+        Err(err) => return err,
+    };
+
+    let tweak_key = match parse_private_key(env, tweak_key_bin) {
+        Ok(key) => key,
+        Err(err) => return err,
+    };
+
+    if let Err(_) = private_key.tweak_mul_assign(&tweak_key) {
+        return (atoms::error(), atoms::tweak_failure()).encode(env);
+    }
+
+    let serialized_private_key = serialize_private_key(private_key);
+    (atoms::ok(), serialized_private_key.release(env)).encode(env)
 }
 
 #[rustler::nif]
@@ -224,12 +259,8 @@ fn public_key_decompress<'a>(env: Env<'a>, compressed_public_key_bin: Binary) ->
         Err(_) => return (atoms::error(), atoms::invalid_public_key()).encode(env),
     };
 
-    let public_key_array = public_key.serialize();
-    let mut public_key_result: OwnedBinary = OwnedBinary::new(65).unwrap();
-    public_key_result
-        .as_mut_slice()
-        .copy_from_slice(&public_key_array);
-    (atoms::ok(), public_key_result.release(env)).encode(env)
+    let serialized_public_key = serialize_public_key(public_key);
+    (atoms::ok(), serialized_public_key.release(env)).encode(env)
 }
 
 #[rustler::nif]
@@ -283,12 +314,8 @@ fn secp256k1_recover<'a>(
 ) -> Term<'a> {
     match libsecp256k1::recover(&message, &signature, &recovery_id) {
         Ok(public_key) => {
-            let public_key_array = public_key.serialize();
-            let mut public_key_result: OwnedBinary = OwnedBinary::new(65).unwrap();
-            public_key_result
-                .as_mut_slice()
-                .copy_from_slice(&public_key_array);
-            (atoms::ok(), public_key_result.release(env)).encode(env)
+            let serialized_public_key = serialize_public_key(public_key);
+            (atoms::ok(), serialized_public_key.release(env)).encode(env)
         }
         Err(_) => (atoms::error(), atoms::recovery_failure()).encode(env),
     }
@@ -328,7 +355,7 @@ fn parse_private_key<'a>(env: Env<'a>, private_key_bin: Binary) -> Result<Secret
 
     match SecretKey::parse(&private_key_fixed) {
         Ok(private_key) => Ok(private_key),
-        Err(_) => return Err((atoms::error(), atoms::invalid_private_key()).encode(env)),
+        Err(_) => Err((atoms::error(), atoms::invalid_private_key()).encode(env)),
     }
 }
 
@@ -343,7 +370,7 @@ fn parse_public_key<'a>(env: Env<'a>, public_key_bin: Binary) -> Result<PublicKe
 
     match PublicKey::parse(&public_key_fixed) {
         Ok(key) => Ok(key),
-        Err(_) => return Err((atoms::error(), atoms::invalid_public_key()).encode(env)),
+        Err(_) => Err((atoms::error(), atoms::invalid_public_key()).encode(env)),
     }
 }
 
@@ -357,14 +384,14 @@ fn parse_signature<'a>(env: Env<'a>, signature_bin: Binary) -> Result<Signature,
 
     match Signature::parse_standard(&signature_fixed) {
         Ok(sign_result) => Ok(sign_result),
-        Err(_) => return Err((atoms::error(), atoms::invalid_signature()).encode(env)),
+        Err(_) => Err((atoms::error(), atoms::invalid_signature()).encode(env)),
     }
 }
 
 fn parse_recovery_id<'a>(env: Env<'a>, recovery_id: u8) -> Result<RecoveryId, Term<'a>> {
     match RecoveryId::parse(recovery_id) {
         Ok(id) => Ok(id),
-        Err(_) => return Err((atoms::error(), atoms::invalid_recovery_id()).encode(env)),
+        Err(_) => Err((atoms::error(), atoms::invalid_recovery_id()).encode(env)),
     }
 }
 
@@ -384,4 +411,24 @@ fn parse_scalar<'a>(scalar_bin: Binary) -> Result<Scalar, ()> {
     }
 
     Ok(scalar)
+}
+
+fn serialize_public_key<'a>(public_key: PublicKey) -> OwnedBinary {
+    let mut erl_bin: OwnedBinary = OwnedBinary::new(65).unwrap();
+    let public_key_serialized = public_key.serialize();
+    erl_bin
+        .as_mut_slice()
+        .copy_from_slice(&public_key_serialized);
+
+    erl_bin
+}
+
+fn serialize_private_key<'a>(private_key: SecretKey) -> OwnedBinary {
+    let mut erl_bin: OwnedBinary = OwnedBinary::new(32).unwrap();
+    let private_key_serialized = private_key.serialize();
+    erl_bin
+        .as_mut_slice()
+        .copy_from_slice(&private_key_serialized);
+
+    erl_bin
 }

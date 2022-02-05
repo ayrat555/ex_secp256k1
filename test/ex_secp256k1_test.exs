@@ -571,7 +571,7 @@ defmodule ExSecp256k1Test do
   end
 
   describe "public_key_tweak_mult/2" do
-    test "adds over ec" do
+    test "mults over ec" do
       public_key =
         <<4, 204, 170, 92, 229, 234, 207, 153, 33, 250, 27, 208, 37, 71, 183, 155, 104, 155, 45,
           114, 7, 156, 83, 199, 245, 83, 32, 128, 45, 174, 96, 24, 38, 220, 210, 198, 20, 132,
@@ -589,6 +589,42 @@ defmodule ExSecp256k1Test do
           168, 9, 109, 202, 53, 205, 96>>
 
       assert {:ok, ^expected_result} = ExSecp256k1.public_key_tweak_mult(public_key, private_key)
+    end
+  end
+
+  describe "private_key_tweak_add/2" do
+    test "adds over ec" do
+      private_key =
+        <<72, 91, 33, 135, 186, 13, 21, 144, 75, 36, 27, 203, 157, 203, 177, 166, 86, 92, 151,
+          137, 148, 205, 234, 174, 192, 12, 9, 227, 208, 173, 74, 69>>
+
+      tweak_key =
+        <<50, 8, 92, 222, 223, 155, 132, 50, 53, 227, 114, 79, 88, 11, 248, 24, 239, 76, 236, 39,
+          195, 198, 112, 133, 224, 41, 65, 138, 91, 47, 111, 43>>
+
+      expected_result =
+        <<122, 99, 126, 102, 153, 168, 153, 194, 129, 7, 142, 26, 245, 215, 169, 191, 69, 169,
+          131, 177, 88, 148, 91, 52, 160, 53, 75, 110, 43, 220, 185, 112>>
+
+      assert {:ok, ^expected_result} = ExSecp256k1.private_key_tweak_add(private_key, tweak_key)
+    end
+  end
+
+  describe "private_key_tweak_mult/2" do
+    test "mults over ec" do
+      private_key =
+        <<72, 91, 33, 135, 186, 13, 21, 144, 75, 36, 27, 203, 157, 203, 177, 166, 86, 92, 151,
+          137, 148, 205, 234, 174, 192, 12, 9, 227, 208, 173, 74, 69>>
+
+      tweak_key =
+        <<50, 8, 92, 222, 223, 155, 132, 50, 53, 227, 114, 79, 88, 11, 248, 24, 239, 76, 236, 39,
+          195, 198, 112, 133, 224, 41, 65, 138, 91, 47, 111, 43>>
+
+      expected_result =
+        <<61, 245, 131, 95, 130, 145, 28, 203, 86, 95, 138, 42, 204, 116, 239, 144, 179, 153, 44,
+          2, 87, 182, 182, 226, 10, 212, 78, 249, 44, 162, 84, 98>>
+
+      assert {:ok, ^expected_result} = ExSecp256k1.private_key_tweak_mult(private_key, tweak_key)
     end
   end
 end
