@@ -24,7 +24,7 @@ dependencies in `mix.exs`:
 
 ## Usage
 
-The docs can be found at [https://hexdocs.pm/cryptopunk](https://hexdocs.pm/ex_secp256k1).
+The docs can be found at [https://hexdocs.pm/ex_secp256k1](https://hexdocs.pm/ex_secp256k1).
 
 ## Contributing
 
