@@ -199,11 +199,11 @@ defmodule ExSecp256k1Test do
     end
 
     test "fails to recover if r < 32 bytes", %{hash: hash, s: s, recovery_id: recovery_id} do
-      assert {:error, :wrong_r_size} = ExSecp256k1.recover(hash, <<1>>, s, recovery_id)
+      assert {:error, :invalid_r} = ExSecp256k1.recover(hash, <<1>>, s, recovery_id)
     end
 
     test "fails to recover if s < 32 bytes", %{hash: hash, r: r, recovery_id: recovery_id} do
-      assert {:error, :wrong_s_size} = ExSecp256k1.recover(hash, r, <<1>>, recovery_id)
+      assert {:error, :invalid_s} = ExSecp256k1.recover(hash, r, <<1>>, recovery_id)
     end
 
     test "fails to recover if hash is not binary", %{r: r, s: s, recovery_id: recovery_id} do

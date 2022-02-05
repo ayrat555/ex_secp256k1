@@ -11,14 +11,16 @@ mod atoms {
         wrong_private_key_size,
         wrong_public_key_size,
         wrong_tweak_key_size,
-        wrong_r_size,
-        wrong_s_size,
+        wrong_scalar_size,
+        scalar_overflow,
         wrong_signature_size,
         recovery_failure,
         invalid_recovery_id,
         invalid_signature,
         invalid_public_key,
         invalid_private_key,
+        invalid_r,
+        invalid_s,
         tweak_add_failure,
         failed_to_verify
     }
@@ -82,35 +84,27 @@ fn recover<'a>(
     s_bin: Binary,
     recovery_id_u8: u8,
 ) -> Term<'a> {
-    if r_bin.len() != 32 {
-        return (atoms::error(), atoms::wrong_r_size()).encode(env);
-    }
+    let r = match parse_scalar(r_bin) {
+        Ok(scalar) => scalar,
+        Err(_) => return (atoms::error(), atoms::invalid_r()).encode(env),
+    };
 
-    if s_bin.len() != 32 {
-        return (atoms::error(), atoms::wrong_s_size()).encode(env);
-    }
+    let s = match parse_scalar(s_bin) {
+        Ok(scalar) => scalar,
+        Err(_) => return (atoms::error(), atoms::invalid_s()).encode(env),
+    };
 
     let message = match parse_message(env, hash_bin) {
         Ok(message) => message,
         Err(err) => return err,
     };
 
-    let mut s = Scalar::default();
-
-    let mut s_fixed: [u8; 32] = [0; 32];
-    s_fixed.copy_from_slice(&s_bin.as_slice()[..32]);
-    let _ = s.set_b32(&s_fixed);
-
-    let mut r = Scalar::default();
-    let mut r_fixed: [u8; 32] = [0; 32];
-    r_fixed.copy_from_slice(&r_bin.as_slice()[..32]);
-    let _ = r.set_b32(&r_fixed);
-
-    let signature = Signature { r, s };
     let recovery_id = match parse_recovery_id(env, recovery_id_u8) {
         Ok(id) => id,
         Err(err) => return err,
     };
+
+    let signature = Signature { r, s };
 
     secp256k1_recover(env, message, signature, recovery_id)
 }
@@ -344,4 +338,22 @@ fn parse_recovery_id<'a>(env: Env<'a>, recovery_id: u8) -> Result<RecoveryId, Te
         Ok(id) => Ok(id),
         Err(_) => return Err((atoms::error(), atoms::invalid_recovery_id()).encode(env)),
     }
+}
+
+fn parse_scalar<'a>(scalar_bin: Binary) -> Result<Scalar, ()> {
+    if scalar_bin.len() != 32 {
+        return Err(());
+    }
+
+    let mut scalar_fixed: [u8; 32] = [0; 32];
+    scalar_fixed.copy_from_slice(&scalar_bin.as_slice()[..32]);
+
+    let mut scalar = Scalar::default();
+    let overflow: bool = scalar.set_b32(&scalar_fixed).into();
+
+    if overflow {
+        return Err(());
+    }
+
+    Ok(scalar)
 }
