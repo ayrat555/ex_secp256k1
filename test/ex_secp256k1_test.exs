@@ -195,15 +195,15 @@ defmodule ExSecp256k1Test do
     end
 
     test "fails to recover if hash < 32 bytes", %{r: r, s: s, recovery_id: recovery_id} do
-      assert {:error, :wrong_hash_size} = ExSecp256k1.recover(<<1>>, r, s, recovery_id)
+      assert {:error, :wrong_message_size} = ExSecp256k1.recover(<<1>>, r, s, recovery_id)
     end
 
     test "fails to recover if r < 32 bytes", %{hash: hash, s: s, recovery_id: recovery_id} do
-      assert {:error, :wrong_r_size} = ExSecp256k1.recover(hash, <<1>>, s, recovery_id)
+      assert {:error, :invalid_r} = ExSecp256k1.recover(hash, <<1>>, s, recovery_id)
     end
 
     test "fails to recover if s < 32 bytes", %{hash: hash, r: r, recovery_id: recovery_id} do
-      assert {:error, :wrong_s_size} = ExSecp256k1.recover(hash, r, <<1>>, recovery_id)
+      assert {:error, :invalid_s} = ExSecp256k1.recover(hash, r, <<1>>, recovery_id)
     end
 
     test "fails to recover if hash is not binary", %{r: r, s: s, recovery_id: recovery_id} do
@@ -318,7 +318,8 @@ defmodule ExSecp256k1Test do
     end
 
     test "fails to recover if hash < 32 bytes", %{r: r, s: s, recovery_id: recovery_id} do
-      assert {:error, :wrong_hash_size} = ExSecp256k1.recover_compact(<<1>>, r <> s, recovery_id)
+      assert {:error, :wrong_message_size} =
+               ExSecp256k1.recover_compact(<<1>>, r <> s, recovery_id)
     end
 
     test "fails to recover if hash is not binary", %{r: r, s: s, recovery_id: recovery_id} do
@@ -542,6 +543,88 @@ defmodule ExSecp256k1Test do
           114, 7, 156, 83, 199, 245, 83, 32, 128, 45, 174, 96, 24, 38>>
 
       assert {:error, :wrong_public_key_size} = ExSecp256k1.public_key_compress(compressed_key)
+    end
+  end
+
+  describe "verify/3" do
+    test "verifies signature" do
+      message = :crypto.strong_rand_bytes(32)
+      private_key = :crypto.strong_rand_bytes(32)
+      {:ok, {signature, _r}} = ExSecp256k1.sign_compact(message, private_key)
+
+      {:ok, public_key} = ExSecp256k1.create_public_key(private_key)
+
+      assert :ok = ExSecp256k1.verify(message, signature, public_key)
+    end
+
+    test "fails to verify" do
+      message = :crypto.strong_rand_bytes(32)
+      private_key = :crypto.strong_rand_bytes(32)
+
+      {:ok, {signature, _r}} = ExSecp256k1.sign_compact(message, private_key)
+
+      random_private_key = :crypto.strong_rand_bytes(32)
+      {:ok, public_key} = ExSecp256k1.create_public_key(random_private_key)
+
+      assert {:error, :failed_to_verify} = ExSecp256k1.verify(message, signature, public_key)
+    end
+  end
+
+  describe "public_key_tweak_mult/2" do
+    test "mults over ec" do
+      public_key =
+        <<4, 204, 170, 92, 229, 234, 207, 153, 33, 250, 27, 208, 37, 71, 183, 155, 104, 155, 45,
+          114, 7, 156, 83, 199, 245, 83, 32, 128, 45, 174, 96, 24, 38, 220, 210, 198, 20, 132,
+          174, 75, 63, 131, 95, 120, 101, 186, 93, 179, 95, 14, 206, 46, 48, 6, 129, 8, 146, 40,
+          135, 251, 42, 71, 4, 83, 222>>
+
+      private_key =
+        <<50, 8, 92, 222, 223, 155, 132, 50, 53, 227, 114, 79, 88, 11, 248, 24, 239, 76, 236, 39,
+          195, 198, 112, 133, 224, 41, 65, 138, 91, 47, 111, 43>>
+
+      expected_result =
+        <<4, 45, 138, 232, 251, 50, 179, 128, 29, 76, 255, 235, 63, 110, 20, 254, 175, 25, 22, 42,
+          244, 101, 233, 186, 36, 104, 176, 89, 179, 12, 213, 210, 202, 92, 80, 121, 47, 101, 10,
+          56, 188, 147, 65, 29, 236, 76, 166, 175, 2, 199, 24, 68, 20, 194, 191, 241, 253, 29,
+          168, 9, 109, 202, 53, 205, 96>>
+
+      assert {:ok, ^expected_result} = ExSecp256k1.public_key_tweak_mult(public_key, private_key)
+    end
+  end
+
+  describe "private_key_tweak_add/2" do
+    test "adds over ec" do
+      private_key =
+        <<72, 91, 33, 135, 186, 13, 21, 144, 75, 36, 27, 203, 157, 203, 177, 166, 86, 92, 151,
+          137, 148, 205, 234, 174, 192, 12, 9, 227, 208, 173, 74, 69>>
+
+      tweak_key =
+        <<50, 8, 92, 222, 223, 155, 132, 50, 53, 227, 114, 79, 88, 11, 248, 24, 239, 76, 236, 39,
+          195, 198, 112, 133, 224, 41, 65, 138, 91, 47, 111, 43>>
+
+      expected_result =
+        <<122, 99, 126, 102, 153, 168, 153, 194, 129, 7, 142, 26, 245, 215, 169, 191, 69, 169,
+          131, 177, 88, 148, 91, 52, 160, 53, 75, 110, 43, 220, 185, 112>>
+
+      assert {:ok, ^expected_result} = ExSecp256k1.private_key_tweak_add(private_key, tweak_key)
+    end
+  end
+
+  describe "private_key_tweak_mult/2" do
+    test "mults over ec" do
+      private_key =
+        <<72, 91, 33, 135, 186, 13, 21, 144, 75, 36, 27, 203, 157, 203, 177, 166, 86, 92, 151,
+          137, 148, 205, 234, 174, 192, 12, 9, 227, 208, 173, 74, 69>>
+
+      tweak_key =
+        <<50, 8, 92, 222, 223, 155, 132, 50, 53, 227, 114, 79, 88, 11, 248, 24, 239, 76, 236, 39,
+          195, 198, 112, 133, 224, 41, 65, 138, 91, 47, 111, 43>>
+
+      expected_result =
+        <<61, 245, 131, 95, 130, 145, 28, 203, 86, 95, 138, 42, 204, 116, 239, 144, 179, 153, 44,
+          2, 87, 182, 182, 226, 10, 212, 78, 249, 44, 162, 84, 98>>
+
+      assert {:ok, ^expected_result} = ExSecp256k1.private_key_tweak_mult(private_key, tweak_key)
     end
   end
 end
