@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5
+
+* Update rustler to 0.24
+
 ## 0.4
 
 * Add wrappers for more functions
