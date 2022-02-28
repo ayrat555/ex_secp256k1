@@ -7,7 +7,7 @@ defmodule ExSecp256k1.MixProject do
     [
       app: :ex_secp256k1,
       name: "ExSecp256k1",
-      version: "0.4.0",
+      version: "0.5.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       compilers: Mix.compilers(),
@@ -20,8 +20,7 @@ defmodule ExSecp256k1.MixProject do
 
   defp description do
     """
-    Rust Nif that wraps a couple functions from the libsecp256k1 Rust library.
-    It only wraps secp256k1 functions used in Ethereum.
+    Rust Nif that wraps functions from the libsecp256k1 Rust library.
     """
   end
 
@@ -36,8 +35,10 @@ defmodule ExSecp256k1.MixProject do
       },
       files: [
         "mix.exs",
+        "native/exsecp256k1/.cargo/config",
         "native/exsecp256k1/src",
         "native/exsecp256k1/Cargo.toml",
+        "native/exsecp256k1/Cargo.lock",
         "lib",
         "LICENSE",
         "README.md",
@@ -66,7 +67,7 @@ defmodule ExSecp256k1.MixProject do
   defp deps do
     [
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      {:rustler, "~> 0.23"},
+      {:rustler, "~> 0.24"},
       {:benchee, "~> 1.0.1", only: :test},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
