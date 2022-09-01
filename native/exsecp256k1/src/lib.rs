@@ -4,10 +4,10 @@ use libsecp256k1::PublicKey;
 use libsecp256k1::RecoveryId;
 use libsecp256k1::SecretKey;
 use libsecp256k1::Signature;
-use rustler::types::binary::NewBinary;
 use rustler::Binary;
 use rustler::Encoder;
 use rustler::Env;
+use rustler::NewBinary;
 use rustler::Term;
 
 mod atoms {
