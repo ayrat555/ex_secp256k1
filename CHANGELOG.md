@@ -2,7 +2,7 @@
 
 ## 0.6
 
-* Update rustler to 0.25
+* Update rustler to 0.26
 
 ## 0.5
 
