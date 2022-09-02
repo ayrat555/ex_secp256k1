@@ -7,7 +7,7 @@ defmodule ExSecp256k1.MixProject do
     [
       app: :ex_secp256k1,
       name: "ExSecp256k1",
-      version: "0.5.0",
+      version: "0.6.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
       compilers: Mix.compilers(),
@@ -66,11 +66,11 @@ defmodule ExSecp256k1.MixProject do
 
   defp deps do
     [
-      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
-      {:rustler, "~> 0.24"},
       {:benchee, "~> 1.0.1", only: :test},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+      {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:rustler, "~> 0.26"}
     ]
   end
 end
