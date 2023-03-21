@@ -25,3 +25,4 @@ ex_secp256k1-*.tar
 
 /priv/native/*.so
 /native/exsecp256k1/target/*
+checksum-Elixir*

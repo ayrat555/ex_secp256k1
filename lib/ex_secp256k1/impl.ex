@@ -1,8 +1,6 @@
 defmodule ExSecp256k1.Impl do
   @moduledoc false
 
-  use Rustler, otp_app: :ex_secp256k1, crate: :exsecp256k1
-
   def sign(_message, _private_key), do: :erlang.nif_error(:nif_not_loaded)
 
   def sign_compact(_message, _private_key), do: :erlang.nif_error(:nif_not_loaded)

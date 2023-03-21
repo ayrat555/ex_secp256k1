@@ -10,6 +10,7 @@ jobs:
   ci:
     env:
       MIX_ENV: test
+      EXSECP_BUILD: 1
     strategy:
       fail-fast: false
       matrix:

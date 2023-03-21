@@ -6,6 +6,18 @@ defmodule ExSecp256k1 do
   """
   alias ExSecp256k1.Impl
 
+  env_config = Application.compile_env(:rustler_precompiled, :force_build, [])
+  version = Mix.Project.config()[:version]
+
+  use RustlerPrecompiled,
+    otp_app: :ex_secp256k1,
+    crate: :exsecp256k1,
+    base_url: "https://github.com/omgnetwork/ex_secp256k1/releases/download/v#{version}",
+    force_build: System.get_env("EXSECP_BUILD") in ["1", true] or env_config[:ex_secp256k1],
+    targets:
+      Enum.uniq(["aarch64-unknown-linux-musl" | RustlerPrecompiled.Config.default_targets()]),
+    version: version
+
   @type error :: {:error, atom()}
 
   @doc """
