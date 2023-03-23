@@ -5,7 +5,7 @@ defmodule ExSecp256k1.Impl do
 
   use RustlerPrecompiled,
     otp_app: :ex_secp256k1,
-    crate: :exsecp256k1,
+    crate: :ex_secp256k1,
     base_url: "https://github.com/ayrat555/ex_secp256k1/releases/download/v#{version}",
     force_build: System.get_env("EX_SECP256K1_BUILD") in ["1", "true"],
     version: version
