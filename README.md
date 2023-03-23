@@ -11,14 +11,12 @@ It wraps functions from the [libsecp256k1](https://github.com/paritytech/libsecp
 
 ## Installation
 
-`ex_secp256k1` requires Rust to be installed.
-
 The package can be installed by adding `ex_secp256k1` to your list of
 dependencies in `mix.exs`:
 
 ```elixir
   [
-    {:ex_secp256k1, "~> 0.6"}
+    {:ex_secp256k1, "~> 0.7"}
   ]
 ```
 
