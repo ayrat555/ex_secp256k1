@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0
+
+* Use rust_precompiled (https://github.com/ayrat555/ex_secp256k1/pull/17)
+
+Rust is not required anymore
+
 ## 0.6
 
 * Update rustler to 0.26
