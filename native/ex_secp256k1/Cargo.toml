@@ -1,11 +1,11 @@
 [package]
-name = "exsecp256k1"
+name = "ex_secp256k1"
 version = "0.1.0"
 authors = []
 edition = "2018"
 
 [lib]
-name = "exsecp256k1"
+name = "ex_secp256k1"
 path = "src/lib.rs"
 crate-type = ["dylib"]
 
