@@ -51,7 +51,7 @@ jobs:
         target: ${{ matrix.job.target }}
         nif-version: ${{ matrix.nif }}
         use-cross: ${{ matrix.job.use-cross }}
-        project-dir: "native/exsecp256k1"
+        project-dir: "native/ex_secp256k1"
 
     - name: Artifact upload
       uses: actions/upload-artifact@v3
