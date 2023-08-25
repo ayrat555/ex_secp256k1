@@ -7,7 +7,7 @@ defmodule ExSecp256k1.Impl do
     otp_app: :ex_secp256k1,
     crate: :ex_secp256k1,
     base_url: "https://github.com/ayrat555/ex_secp256k1/releases/download/v#{version}",
-    force_build: System.get_env("EX_SECP256K1_BUILD") in ["1", "true"],
+    force_build: System.get_env("RUSTLER_BUILD") in ["1", "true"],
     version: version
 
   def sign(_message, _private_key), do: :erlang.nif_error(:nif_not_loaded)
