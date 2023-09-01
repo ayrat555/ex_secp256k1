@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.1
+
+* Use a generic ENV name to force build (https://github.com/ayrat555/ex_secp256k1/pull/20)
+* Update rustler to 0.29 (https://github.com/ayrat555/ex_secp256k1/pull/21)
+
 ## 0.7.0
 
 * Use rust_precompiled (https://github.com/ayrat555/ex_secp256k1/pull/17)
