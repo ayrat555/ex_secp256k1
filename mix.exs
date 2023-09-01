@@ -3,7 +3,7 @@ defmodule ExSecp256k1.MixProject do
 
   @source_url "https://github.com/omgnetwork/ex_secp256k1"
 
-  @version "0.7.0"
+  @version "0.7.1"
 
   def project do
     [
