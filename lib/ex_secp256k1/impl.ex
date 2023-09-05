@@ -8,6 +8,7 @@ defmodule ExSecp256k1.Impl do
     crate: :ex_secp256k1,
     base_url: "https://github.com/ayrat555/ex_secp256k1/releases/download/v#{version}",
     force_build: System.get_env("RUSTLER_BUILD") in ["1", "true"],
+    targets: Enum.uniq(["x86_64-unknown-freebsd" | RustlerPrecompiled.Config.default_targets()]),
     version: version
 
   def sign(_message, _private_key), do: :erlang.nif_error(:nif_not_loaded)

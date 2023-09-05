@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.2
+
+* Support freebsd target
+
 ## 0.7.1
 
 * Use a generic ENV name to force build (https://github.com/ayrat555/ex_secp256k1/pull/20)
