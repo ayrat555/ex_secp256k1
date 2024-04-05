@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.3
+
+* Update rustler to 0.32 (https://github.com/ayrat555/ex_secp256k1/pull/24)
+
 ## 0.7.2
 
 * Support freebsd target
