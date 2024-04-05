@@ -1,7 +1,7 @@
 defmodule ExSecp256k1.MixProject do
   use Mix.Project
 
-  @source_url "https://github.com/omgnetwork/ex_secp256k1"
+  @source_url "https://github.com/ayrat555/ex_secp256k1"
 
   @version "0.7.3"
 
