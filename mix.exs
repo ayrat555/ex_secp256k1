@@ -3,7 +3,7 @@ defmodule ExSecp256k1.MixProject do
 
   @source_url "https://github.com/omgnetwork/ex_secp256k1"
 
-  @version "0.7.2"
+  @version "0.7.3"
 
   def project do
     [
@@ -74,7 +74,7 @@ defmodule ExSecp256k1.MixProject do
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:rustler, ">= 0.0.0", optional: true},
-      {:rustler_precompiled, "~> 0.6"}
+      {:rustler_precompiled, "~> 0.7"}
     ]
   end
 end
