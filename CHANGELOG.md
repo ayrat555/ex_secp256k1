@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.4
+
+* Update rustler_precompiled to 0.8.2 (https://github.com/ayrat555/ex_secp256k1/pull/25)
+
 ## 0.7.3
 
 * Update rustler to 0.32 (https://github.com/ayrat555/ex_secp256k1/pull/24)
