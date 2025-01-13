@@ -31,23 +31,7 @@ mod atoms {
     }
 }
 
-rustler::init!(
-    "Elixir.ExSecp256k1.Impl",
-    [
-        sign,
-        sign_compact,
-        recover,
-        recover_compact,
-        create_public_key,
-        public_key_tweak_add,
-        public_key_tweak_mult,
-        public_key_decompress,
-        public_key_compress,
-        private_key_tweak_add,
-        private_key_tweak_mult,
-        verify
-    ]
-);
+rustler::init!("Elixir.ExSecp256k1.Impl");
 
 #[rustler::nif]
 fn sign<'a>(env: Env<'a>, message_bin: Binary, private_key_bin: Binary) -> Term<'a> {
