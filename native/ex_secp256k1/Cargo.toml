@@ -10,5 +10,5 @@ path = "src/lib.rs"
 crate-type = ["dylib"]
 
 [dependencies]
-rustler = "0.32"
+rustler = "0.35"
 libsecp256k1 = "0.7.1"
