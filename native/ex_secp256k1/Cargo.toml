@@ -11,4 +11,8 @@ crate-type = ["dylib"]
 
 [dependencies]
 rustler = "0.35"
-libsecp256k1 = "0.7.1"
+libsecp256k1 = "0.7.2"
+
+[features]
+nif_version_2_15 = ["rustler/nif_version_2_15"]
+nif_version_2_16 = ["rustler/nif_version_2_16"]
