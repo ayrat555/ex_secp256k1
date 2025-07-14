@@ -8,7 +8,7 @@ on:
 
 jobs:
   mix_test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     env:
       MIX_ENV: test
       RUSTLER_BUILD: "1"
@@ -46,14 +46,14 @@ jobs:
           - pair:
               elixir: 1.16.1
               otp: 26.2.2
-            lint: lint
           - pair:
-              elixir: 1.17.3
-              otp: 27.2
+              elixir: 1.18.4
+              otp: 27.2.1
+            lint: lint
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: erlef/setup-beam@v1.15
+      - uses: erlef/setup-beam@v1.20.4
         with:
           otp-version: ${{ matrix.pair.otp }}
           elixir-version: ${{ matrix.pair.elixir }}
@@ -75,3 +75,6 @@ jobs:
       - run: mix compile --warnings-as-errors
 
       - run: mix test
+
+      - run: mix dialyzer
+        if: ${{ matrix.lint }}

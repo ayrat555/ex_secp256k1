@@ -37,7 +37,7 @@ defmodule ExSecp256k1.MixProject do
       },
       files: [
         "mix.exs",
-        "native/ex_secp256k1/.cargo/config",
+        "native/ex_secp256k1/.cargo/config.toml",
         "native/ex_secp256k1/src",
         "native/ex_secp256k1/Cargo.toml",
         "native/ex_secp256k1/Cargo.lock",
