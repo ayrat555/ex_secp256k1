@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.6
+
+* compile on ubuntu 22.04 to support older systems (https://github.com/ayrat555/ex_secp256k1/pull/29)
+
 ## 0.7.5
 
 * Update lib_secp256k1 from 0.7.1 to 0.7.2, rustler from 0.35 to 0.36 (https://github.com/ayrat555/ex_secp256k1/pull/26)
