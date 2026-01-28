@@ -332,7 +332,7 @@ fn secp256k1_sign_new<'a>(
     let message = parse_message_new(env, message_bin)?;
     let private_key = parse_private_key_new(env, private_key_bin)?;
 
-    match private_key.sign_recoverable(&message) {
+    match private_key.sign_prehash_recoverable(&message) {
         Ok(result) => Ok(result),
         Err(_) => Err((atoms::error(), atoms::sign_error()).encode(env)),
     }
