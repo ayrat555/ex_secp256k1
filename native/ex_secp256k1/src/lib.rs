@@ -1,3 +1,6 @@
+use k256::ecdsa::RecoveryId as K256RecoveryID;
+use k256::ecdsa::Signature as K256Signature;
+use k256::ecdsa::SigningKey;
 use libsecp256k1::curve::Scalar;
 use libsecp256k1::Message;
 use libsecp256k1::PublicKey;
@@ -22,6 +25,7 @@ mod atoms {
         recovery_failure,
         invalid_recovery_id,
         invalid_signature,
+        sign_error,
         invalid_public_key,
         invalid_private_key,
         invalid_r,
@@ -35,37 +39,44 @@ rustler::init!("Elixir.ExSecp256k1.Impl");
 
 #[rustler::nif]
 fn sign<'a>(env: Env<'a>, message_bin: Binary, private_key_bin: Binary) -> Term<'a> {
-    let (Signature { s, r }, recid) = match secp256k1_sign(env, message_bin, private_key_bin) {
+    let (signature, recid) = match secp256k1_sign_new(env, message_bin, private_key_bin) {
         Ok(result) => result,
         Err(error) => return error,
     };
 
+    let (r, s) = signature.split_scalars();
+
     let mut r_bin = NewBinary::new(env, 32);
     let mut s_bin = NewBinary::new(env, 32);
 
-    r_bin.as_mut_slice().copy_from_slice(&r.b32());
-    s_bin.as_mut_slice().copy_from_slice(&s.b32());
-    let recid_u8: u8 = recid.into();
+    r_bin.as_mut_slice().copy_from_slice(&r.to_bytes());
+    s_bin.as_mut_slice().copy_from_slice(&s.to_bytes());
 
     (
         atoms::ok(),
-        (Binary::from(r_bin), Binary::from(s_bin), recid_u8),
+        (Binary::from(r_bin), Binary::from(s_bin), recid.to_byte()),
     )
         .encode(env)
 }
 
 #[rustler::nif]
 fn sign_compact<'a>(env: Env<'a>, message_bin: Binary, private_key_bin: Binary) -> Term<'a> {
-    let (signature, recovery_id) = match secp256k1_sign(env, message_bin, private_key_bin) {
-        Ok((result, recovery_id)) => (result.serialize(), recovery_id.serialize()),
+    let (signature, recovery_id) = match secp256k1_sign_new(env, message_bin, private_key_bin) {
+        Ok(result) => result,
         Err(error) => return error,
     };
 
     let mut signature_bin = NewBinary::new(env, 64);
 
-    signature_bin.as_mut_slice().copy_from_slice(&signature);
+    signature_bin
+        .as_mut_slice()
+        .copy_from_slice(&signature.to_bytes());
 
-    (atoms::ok(), (Binary::from(signature_bin), recovery_id)).encode(env)
+    (
+        atoms::ok(),
+        (Binary::from(signature_bin), recovery_id.to_byte()),
+    )
+        .encode(env)
 }
 
 #[rustler::nif]
@@ -313,15 +324,18 @@ fn secp256k1_recover<'a>(
     }
 }
 
-fn secp256k1_sign<'a>(
+fn secp256k1_sign_new<'a>(
     env: Env<'a>,
     message_bin: Binary,
     private_key_bin: Binary,
-) -> Result<(Signature, RecoveryId), Term<'a>> {
-    let message = parse_message(env, message_bin)?;
-    let private_key = parse_private_key(env, private_key_bin)?;
+) -> Result<(K256Signature, K256RecoveryID), Term<'a>> {
+    let message = parse_message_new(env, message_bin)?;
+    let private_key = parse_private_key_new(env, private_key_bin)?;
 
-    Ok(libsecp256k1::sign(&message, &private_key))
+    match private_key.sign_recoverable(&message) {
+        Ok(result) => Ok(result),
+        Err(_) => Err((atoms::error(), atoms::sign_error()).encode(env)),
+    }
 }
 
 fn parse_message<'a>(env: Env<'a>, message_bin: Binary) -> Result<Message, Term<'a>> {
@@ -337,6 +351,17 @@ fn parse_message<'a>(env: Env<'a>, message_bin: Binary) -> Result<Message, Term<
     Ok(message)
 }
 
+fn parse_message_new<'a>(env: Env<'a>, message_bin: Binary) -> Result<[u8; 32], Term<'a>> {
+    if message_bin.len() != 32 {
+        return Err((atoms::error(), atoms::wrong_message_size()).encode(env));
+    }
+
+    let mut message_fixed: [u8; 32] = [0; 32];
+    message_fixed.copy_from_slice(&message_bin.as_slice()[..32]);
+
+    Ok(message_fixed)
+}
+
 fn parse_private_key<'a>(env: Env<'a>, private_key_bin: Binary) -> Result<SecretKey, Term<'a>> {
     if private_key_bin.len() != 32 {
         return Err((atoms::error(), atoms::wrong_private_key_size()).encode(env));
@@ -346,6 +371,23 @@ fn parse_private_key<'a>(env: Env<'a>, private_key_bin: Binary) -> Result<Secret
     private_key_fixed.copy_from_slice(&private_key_bin.as_slice()[..32]);
 
     match SecretKey::parse(&private_key_fixed) {
+        Ok(private_key) => Ok(private_key),
+        Err(_) => Err((atoms::error(), atoms::invalid_private_key()).encode(env)),
+    }
+}
+
+fn parse_private_key_new<'a>(
+    env: Env<'a>,
+    private_key_bin: Binary,
+) -> Result<SigningKey, Term<'a>> {
+    if private_key_bin.len() != 32 {
+        return Err((atoms::error(), atoms::wrong_private_key_size()).encode(env));
+    }
+
+    let mut private_key_fixed: [u8; 32] = [0; 32];
+    private_key_fixed.copy_from_slice(&private_key_bin.as_slice()[..32]);
+
+    match SigningKey::from_bytes(&private_key_fixed.into()) {
         Ok(private_key) => Ok(private_key),
         Err(_) => Err((atoms::error(), atoms::invalid_private_key()).encode(env)),
     }
