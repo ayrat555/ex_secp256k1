@@ -39,7 +39,7 @@ rustler::init!("Elixir.ExSecp256k1.Impl");
 
 #[rustler::nif]
 fn sign<'a>(env: Env<'a>, message_bin: Binary, private_key_bin: Binary) -> Term<'a> {
-    let (signature, recid) = match secp256k1_sign_new(env, message_bin, private_key_bin) {
+    let (signature, recid) = match secp256k1_sign(env, message_bin, private_key_bin) {
         Ok(result) => result,
         Err(error) => return error,
     };
@@ -61,7 +61,7 @@ fn sign<'a>(env: Env<'a>, message_bin: Binary, private_key_bin: Binary) -> Term<
 
 #[rustler::nif]
 fn sign_compact<'a>(env: Env<'a>, message_bin: Binary, private_key_bin: Binary) -> Term<'a> {
-    let (signature, recovery_id) = match secp256k1_sign_new(env, message_bin, private_key_bin) {
+    let (signature, recovery_id) = match secp256k1_sign(env, message_bin, private_key_bin) {
         Ok(result) => result,
         Err(error) => return error,
     };
@@ -324,7 +324,7 @@ fn secp256k1_recover<'a>(
     }
 }
 
-fn secp256k1_sign_new<'a>(
+fn secp256k1_sign<'a>(
     env: Env<'a>,
     message_bin: Binary,
     private_key_bin: Binary,
