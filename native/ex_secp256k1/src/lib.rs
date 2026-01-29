@@ -3,10 +3,8 @@ use k256::ecdsa::RecoveryId as K256RecoveryID;
 use k256::ecdsa::Signature as K256Signature;
 use k256::ecdsa::SigningKey;
 use k256::ecdsa::VerifyingKey;
-use libsecp256k1::curve::Scalar;
 use libsecp256k1::Message;
 use libsecp256k1::PublicKey;
-use libsecp256k1::RecoveryId;
 use libsecp256k1::SecretKey;
 use libsecp256k1::Signature;
 use rustler::Binary;
@@ -89,29 +87,36 @@ fn recover<'a>(
     s_bin: Binary,
     recovery_id_u8: u8,
 ) -> Term<'a> {
-    let r = match parse_scalar(r_bin) {
+    let r = match parse_scalar_new(r_bin) {
         Ok(scalar) => scalar,
         Err(_) => return (atoms::error(), atoms::invalid_r()).encode(env),
     };
 
-    let s = match parse_scalar(s_bin) {
+    let s = match parse_scalar_new(s_bin) {
         Ok(scalar) => scalar,
         Err(_) => return (atoms::error(), atoms::invalid_s()).encode(env),
     };
 
-    let message = match parse_message(env, hash_bin) {
+    let mut signature_bin = [0u8; 64];
+    signature_bin[..32].copy_from_slice(&r);
+    signature_bin[32..].copy_from_slice(&s);
+
+    let signature = match parse_signature_new(env, signature_bin) {
+        Ok(sign) => sign,
+        Err(_) => return (atoms::error(), atoms::invalid_signature()).encode(env),
+    };
+
+    let message = match parse_message_new(env, hash_bin) {
         Ok(message) => message,
         Err(err) => return err,
     };
 
-    let recovery_id = match parse_recovery_id(env, recovery_id_u8) {
+    let recovery_id = match parse_recovery_id_new(env, recovery_id_u8) {
         Ok(id) => id,
         Err(err) => return err,
     };
 
-    let signature = Signature { r, s };
-
-    secp256k1_recover(env, message, signature, recovery_id)
+    secp256k1_recover_new(env, message, signature, recovery_id)
 }
 
 #[rustler::nif]
@@ -126,7 +131,14 @@ fn recover_compact<'a>(
         Err(err) => return err,
     };
 
-    let signature = match parse_signature_new(env, signature_bin) {
+    if signature_bin.len() != 64 {
+        return (atoms::error(), atoms::wrong_signature_size()).encode(env);
+    }
+
+    let mut signature_fixed: [u8; 64] = [0; 64];
+    signature_fixed.copy_from_slice(&signature_bin.as_slice()[..64]);
+
+    let signature = match parse_signature_new(env, signature_fixed) {
         Ok(sign_result) => sign_result,
         Err(err) => return err,
     };
@@ -311,21 +323,6 @@ fn verify<'a>(
     }
 }
 
-fn secp256k1_recover<'a>(
-    env: Env<'a>,
-    message: Message,
-    signature: Signature,
-    recovery_id: RecoveryId,
-) -> Term<'a> {
-    match libsecp256k1::recover(&message, &signature, &recovery_id) {
-        Ok(public_key) => {
-            let serialized_public_key = serialize_public_key(env, public_key);
-            (atoms::ok(), serialized_public_key).encode(env)
-        }
-        Err(_) => (atoms::error(), atoms::recovery_failure()).encode(env),
-    }
-}
-
 fn secp256k1_recover_new<'a>(
     env: Env<'a>,
     message: [u8; 32],
@@ -439,24 +436,13 @@ fn parse_signature<'a>(env: Env<'a>, signature_bin: Binary) -> Result<Signature,
     }
 }
 
-fn parse_signature_new<'a>(env: Env<'a>, signature_bin: Binary) -> Result<K256Signature, Term<'a>> {
-    if signature_bin.len() != 64 {
-        return Err((atoms::error(), atoms::wrong_signature_size()).encode(env));
-    }
-
-    let mut signature_fixed: [u8; 64] = [0; 64];
-    signature_fixed.copy_from_slice(&signature_bin.as_slice()[..64]);
-
-    match K256Signature::from_slice(&signature_fixed) {
+fn parse_signature_new<'a>(
+    env: Env<'a>,
+    signature_bin: [u8; 64],
+) -> Result<K256Signature, Term<'a>> {
+    match K256Signature::from_slice(&signature_bin) {
         Ok(sign_result) => Ok(sign_result),
         Err(_) => Err((atoms::error(), atoms::invalid_signature()).encode(env)),
-    }
-}
-
-fn parse_recovery_id<'a>(env: Env<'a>, recovery_id: u8) -> Result<RecoveryId, Term<'a>> {
-    match RecoveryId::parse(recovery_id) {
-        Ok(id) => Ok(id),
-        Err(_) => Err((atoms::error(), atoms::invalid_recovery_id()).encode(env)),
     }
 }
 
@@ -467,7 +453,7 @@ fn parse_recovery_id_new<'a>(env: Env<'a>, recovery_id: u8) -> Result<K256Recove
     }
 }
 
-fn parse_scalar<'a>(scalar_bin: Binary) -> Result<Scalar, ()> {
+fn parse_scalar_new<'a>(scalar_bin: Binary) -> Result<[u8; 32], ()> {
     if scalar_bin.len() != 32 {
         return Err(());
     }
@@ -475,14 +461,7 @@ fn parse_scalar<'a>(scalar_bin: Binary) -> Result<Scalar, ()> {
     let mut scalar_fixed: [u8; 32] = [0; 32];
     scalar_fixed.copy_from_slice(&scalar_bin.as_slice()[..32]);
 
-    let mut scalar = Scalar::default();
-    let overflow: bool = scalar.set_b32(&scalar_fixed).into();
-
-    if overflow {
-        return Err(());
-    }
-
-    Ok(scalar)
+    Ok(scalar_fixed)
 }
 
 fn serialize_public_key<'a>(env: Env<'a>, public_key: PublicKey) -> Binary<'a> {
