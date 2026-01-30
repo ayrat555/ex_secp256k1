@@ -153,13 +153,13 @@ fn recover_compact<'a>(
 
 #[rustler::nif]
 fn create_public_key<'a>(env: Env<'a>, private_key_bin: Binary) -> Term<'a> {
-    let private_key = match parse_private_key(env, private_key_bin) {
+    let private_key = match parse_private_key_new(env, private_key_bin) {
         Ok(key) => key,
         Err(err) => return err,
     };
 
-    let public_key = PublicKey::from_secret_key(&private_key);
-    let serialized_public_key = serialize_public_key(env, public_key);
+    let public_key = private_key.verifying_key();
+    let serialized_public_key = serialize_public_key_new(env, *public_key, false);
 
     (atoms::ok(), serialized_public_key).encode(env)
 }
@@ -262,31 +262,28 @@ fn private_key_tweak_mult<'a>(
 
 #[rustler::nif]
 fn public_key_decompress<'a>(env: Env<'a>, compressed_public_key_bin: Binary) -> Term<'a> {
-    if compressed_public_key_bin.len() != 33 {
-        return (atoms::error(), atoms::wrong_public_key_size()).encode(env);
-    }
-
-    let public_key_slice = compressed_public_key_bin.as_slice();
-    let mut public_key_fixed: [u8; 33] = [0; 33];
-    public_key_fixed.copy_from_slice(&public_key_slice[0..33]);
-
-    let public_key = match PublicKey::parse_compressed(&public_key_fixed) {
-        Ok(key) => key,
-        Err(_) => return (atoms::error(), atoms::invalid_public_key()).encode(env),
-    };
-
-    let serialized_public_key = serialize_public_key(env, public_key);
-    (atoms::ok(), serialized_public_key).encode(env)
-}
-
-#[rustler::nif]
-fn public_key_compress<'a>(env: Env<'a>, public_key_bin: Binary) -> Term<'a> {
-    let public_key = match parse_public_key(env, public_key_bin) {
+    let public_key = match parse_public_key_new(env, compressed_public_key_bin, true) {
         Ok(key) => key,
         Err(err) => return err,
     };
 
-    let public_key_array = public_key.serialize_compressed();
+    let public_key_array = serialize_public_key_new(env, public_key, false);
+    let mut public_key_result = NewBinary::new(env, 65);
+    public_key_result
+        .as_mut_slice()
+        .copy_from_slice(&public_key_array);
+
+    (atoms::ok(), Binary::from(public_key_result)).encode(env)
+}
+
+#[rustler::nif]
+fn public_key_compress<'a>(env: Env<'a>, public_key_bin: Binary) -> Term<'a> {
+    let public_key = match parse_public_key_new(env, public_key_bin, false) {
+        Ok(key) => key,
+        Err(err) => return err,
+    };
+
+    let public_key_array = serialize_public_key_new(env, public_key, true);
     let mut public_key_result = NewBinary::new(env, 33);
     public_key_result
         .as_mut_slice()
@@ -331,7 +328,7 @@ fn secp256k1_recover_new<'a>(
 ) -> Term<'a> {
     match VerifyingKey::recover_from_prehash(&message, &signature, recovery_id) {
         Ok(public_key) => {
-            let serialized_public_key = serialize_public_key_new(env, public_key);
+            let serialized_public_key = serialize_public_key_new(env, public_key, false);
             (atoms::ok(), serialized_public_key).encode(env)
         }
         Err(_) => (atoms::error(), atoms::recovery_failure()).encode(env),
@@ -422,6 +419,23 @@ fn parse_public_key<'a>(env: Env<'a>, public_key_bin: Binary) -> Result<PublicKe
     }
 }
 
+fn parse_public_key_new<'a>(
+    env: Env<'a>,
+    public_key_bin: Binary,
+    compressed: bool,
+) -> Result<VerifyingKey, Term<'a>> {
+    let bin_size = if compressed { 33 } else { 65 };
+
+    if public_key_bin.len() != bin_size {
+        return Err((atoms::error(), atoms::wrong_public_key_size()).encode(env));
+    }
+
+    match VerifyingKey::from_sec1_bytes(&public_key_bin) {
+        Ok(key) => Ok(key),
+        Err(_) => Err((atoms::error(), atoms::invalid_public_key()).encode(env)),
+    }
+}
+
 fn parse_signature<'a>(env: Env<'a>, signature_bin: Binary) -> Result<Signature, Term<'a>> {
     if signature_bin.len() != 64 {
         return Err((atoms::error(), atoms::wrong_signature_size()).encode(env));
@@ -474,9 +488,18 @@ fn serialize_public_key<'a>(env: Env<'a>, public_key: PublicKey) -> Binary<'a> {
     erl_bin.into()
 }
 
-fn serialize_public_key_new<'a>(env: Env<'a>, public_key: VerifyingKey) -> Binary<'a> {
-    let mut erl_bin = NewBinary::new(env, 65);
-    let public_key_serialized = public_key.to_encoded_point(false).to_bytes();
+fn serialize_public_key_new<'a>(
+    env: Env<'a>,
+    public_key: VerifyingKey,
+    compressed: bool,
+) -> Binary<'a> {
+    let public_key_serialized = public_key.to_encoded_point(compressed).to_bytes();
+
+    let mut erl_bin = if compressed {
+        NewBinary::new(env, 33)
+    } else {
+        NewBinary::new(env, 65)
+    };
 
     erl_bin
         .as_mut_slice()
