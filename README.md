@@ -7,7 +7,7 @@
 
 NIF for secp256k1 curve functions.
 
-It wraps functions from the [libsecp256k1](https://github.com/paritytech/libsecp256k1) Rust library.
+It wraps functions from the [k256](https://github.com/RustCrypto/elliptic-curves/tree/master/k256) Rust library.
 
 ## Installation
 
@@ -16,7 +16,7 @@ dependencies in `mix.exs`:
 
 ```elixir
   [
-    {:ex_secp256k1, "~> 0.7.6"}
+    {:ex_secp256k1, "~> 0.8.0"}
   ]
 ```
 

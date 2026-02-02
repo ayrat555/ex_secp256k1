@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.0
+
+* migrate from `libsecp256k1` to `k256` (https://github.com/ayrat555/ex_secp256k1/pull/30)
+
 ## 0.7.6
 
 * compile on ubuntu 22.04 to support older systems (https://github.com/ayrat555/ex_secp256k1/pull/29)
