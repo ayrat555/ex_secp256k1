@@ -86,7 +86,7 @@ defmodule ExSecp256k1 do
       iex> private_key = :crypto.strong_rand_bytes(32)
       iex> {:ok, _public_key} = ExSecp256k1.create_public_key(private_key)
   """
-  @spec create_public_key(binary()) :: {:ok, binary()} | atom()
+  @spec create_public_key(binary()) :: {:ok, binary()} | error()
   def create_public_key(private_key), do: Impl.create_public_key(private_key)
 
   @doc """
@@ -98,7 +98,7 @@ defmodule ExSecp256k1 do
       iex> tweak_key = <<50, 8, 92, 222, 223, 155, 132, 50, 53, 227, 114, 79, 88, 11, 248, 24, 239, 76, 236, 39, 195, 198, 112, 133, 224, 41, 65, 138, 91, 47, 111, 43>>
       iex> {:ok, _result} = ExSecp256k1.public_key_tweak_add(public_key, tweak_key)
   """
-  @spec public_key_tweak_add(binary(), binary()) :: {:ok, binary()} | atom()
+  @spec public_key_tweak_add(binary(), binary()) :: {:ok, binary()} | error()
   def public_key_tweak_add(public_key, tweak_key),
     do: Impl.public_key_tweak_add(public_key, tweak_key)
 
@@ -111,7 +111,7 @@ defmodule ExSecp256k1 do
       iex> tweak_key = <<50, 8, 92, 222, 223, 155, 132, 50, 53, 227, 114, 79, 88, 11, 248, 24, 239, 76, 236, 39, 195, 198, 112, 133, 224, 41, 65, 138, 91, 47, 111, 43>>
       iex> {:ok, _result} = ExSecp256k1.public_key_tweak_mult(public_key, tweak_key)
   """
-  @spec public_key_tweak_mult(binary(), binary()) :: {:ok, binary()} | atom()
+  @spec public_key_tweak_mult(binary(), binary()) :: {:ok, binary()} | error()
   def public_key_tweak_mult(public_key, tweak_key),
     do: Impl.public_key_tweak_mult(public_key, tweak_key)
 
@@ -123,7 +123,7 @@ defmodule ExSecp256k1 do
       iex> public_key = <<2, 204, 170, 92, 229, 234, 207, 153, 33, 250, 27, 208, 37, 71, 183, 155, 104, 155, 45, 114, 7, 156, 83, 199, 245, 83, 32, 128, 45, 174, 96, 24, 38>>
       iex> {:ok, _result} = ExSecp256k1.public_key_decompress(public_key)
   """
-  @spec public_key_decompress(binary()) :: {:ok, binary()} | atom()
+  @spec public_key_decompress(binary()) :: {:ok, binary()} | error()
   def public_key_decompress(public_key), do: Impl.public_key_decompress(public_key)
 
   @doc """
@@ -134,7 +134,7 @@ defmodule ExSecp256k1 do
       iex> public_key = <<4, 204, 170, 92, 229, 234, 207, 153, 33, 250, 27, 208, 37, 71, 183, 155, 104, 155, 45, 114, 7, 156, 83, 199, 245, 83, 32, 128, 45, 174, 96, 24, 38, 220, 210, 198, 20, 132, 174, 75, 63, 131, 95, 120, 101, 186, 93, 179, 95, 14, 206, 46, 48, 6, 129, 8, 146, 40, 135, 251, 42, 71, 4, 83, 222>>
       iex> {:ok, _result} = ExSecp256k1.public_key_compress(public_key)
   """
-  @spec public_key_compress(binary()) :: {:ok, binary()} | atom()
+  @spec public_key_compress(binary()) :: {:ok, binary()} | error()
   def public_key_compress(public_key), do: Impl.public_key_compress(public_key)
 
   @doc """
@@ -145,7 +145,7 @@ defmodule ExSecp256k1 do
       iex> private_key = <<72, 91, 33, 135, 186, 13, 21, 144, 75, 36, 27, 203, 157, 203, 177, 166, 86, 92, 151, 137, 148, 205, 234, 174, 192, 12, 9, 227, 208, 173, 74, 69>>
       iex> {:ok, _result} = ExSecp256k1.private_key_tweak_add(private_key, private_key)
   """
-  @spec private_key_tweak_add(binary(), binary()) :: {:ok, binary()} | atom()
+  @spec private_key_tweak_add(binary(), binary()) :: {:ok, binary()} | error()
   def private_key_tweak_add(private_key, tweak_key),
     do: Impl.private_key_tweak_add(private_key, tweak_key)
 
@@ -157,7 +157,7 @@ defmodule ExSecp256k1 do
       iex> private_key = <<72, 91, 33, 135, 186, 13, 21, 144, 75, 36, 27, 203, 157, 203, 177, 166, 86, 92, 151, 137, 148, 205, 234, 174, 192, 12, 9, 227, 208, 173, 74, 69>>
       iex> {:ok, _result} = ExSecp256k1.private_key_tweak_mult(private_key, private_key)
   """
-  @spec private_key_tweak_mult(binary(), binary()) :: {:ok, binary()} | atom()
+  @spec private_key_tweak_mult(binary(), binary()) :: {:ok, binary()} | error()
   def private_key_tweak_mult(private_key, tweak_key),
     do: Impl.private_key_tweak_mult(private_key, tweak_key)
 end

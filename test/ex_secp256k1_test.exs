@@ -627,4 +627,20 @@ defmodule ExSecp256k1Test do
       assert {:ok, ^expected_result} = ExSecp256k1.private_key_tweak_mult(private_key, tweak_key)
     end
   end
+
+  describe "key tweak errors" do
+    test "return an error tuple for malformed inputs" do
+      key = :crypto.strong_rand_bytes(32)
+      {:ok, public_key} = ExSecp256k1.create_public_key(key)
+
+      assert {:error, :wrong_public_key_size} = ExSecp256k1.public_key_tweak_add(<<1>>, key)
+
+      assert {:error, :wrong_private_key_size} =
+               ExSecp256k1.public_key_tweak_add(public_key, <<1>>)
+
+      assert {:error, :wrong_public_key_size} = ExSecp256k1.public_key_tweak_mult(<<1>>, key)
+      assert {:error, :wrong_private_key_size} = ExSecp256k1.private_key_tweak_add(<<1>>, key)
+      assert {:error, :wrong_private_key_size} = ExSecp256k1.private_key_tweak_mult(key, <<1>>)
+    end
+  end
 end
